@@ -1,5 +1,6 @@
 
 AccipioKey.sublime-project
 AccipioKey.sublime-workspace
-log/__init__.pyc
-log/logger.pyc
+*.pyc
+
+.DS_Store
