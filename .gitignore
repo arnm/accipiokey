@@ -1,6 +1,8 @@
 
-AccipioKey.sublime-project
-AccipioKey.sublime-workspace
+*.sublime-project
+*.sublime-workspace
 *.pyc
+elasticsearch*
+.*.un~
 
 .DS_Store

