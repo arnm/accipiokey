@@ -1,8 +1,10 @@
 Cython==0.20.1
 Kivy==1.8.0
 Kivy-Garden==0.1.1
+PyYAML==3.10
 pygame==1.9.2a0
 pymongo==2.6.3
 requests==2.2.1
 singleton==0.1.0
+textblob==0.8.4
 urllib3==1.7.1

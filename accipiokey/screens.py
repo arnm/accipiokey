@@ -1,13 +1,15 @@
+
+from accipiokey.dialogs import FileDialog
 from accipiokey.loggers import LinuxEventDistpatcher
 from accipiokey.utils import *
-from accipiokey.dialogs import FileDialog
 
-from kivy.uix.screenmanager import Screen
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
+from kivy.uix.screenmanager import Screen
 
+import mimetypes
 from pymongo import MongoClient
-
+from textblob import TextBlob
 
 # establish mongodb connection
 client = MongoClient()
@@ -95,6 +97,11 @@ class MainScreen(Screen):
 
 class CorpusScreen(Screen):
 
+    def __init__(self, **kwargs):
+        super(CorpusScreen, self).__init__(**kwargs)
+        self._corpora = []
+        self._popup = None
+
     def dismiss_file_dialog(self):
         self._popup.dismiss()
 
@@ -103,14 +110,36 @@ class CorpusScreen(Screen):
         self._popup = Popup(title='Load Corpus', content=content)
         self._popup.open()
 
-    def load(self, path, filename):
-        print(path, filename)
+    def load(self, selections):
+        self.dismiss_file_dialog()
 
+        invalid_selections = []
 
+        # iterate each selection
+        for corpus in selections:
+            # try to open file
+            try:
+                f = open(corpus, 'r')
+            except TypeError:
+                # can't open file, continue with the rest
+                invalid_selections.append(corpus)
+                continue
+            else:
+                # opened file
+                with f:
+                    # check if plain text
+                    if not mimetypes.guess_type(corpus)[0] == 'text/plain':
+                        # unsupported file type
+                        invalid_selections.append(corpus)
+                        continue
 
+                    # read and add to corpora
+                    corpus_text = f.read()
+                    self._corpora.append(corpus_text)
 
+        for corpus in self._corpora:
+            print(corpus)
 
-
-
-
-
+        # notify user of errors
+        if len(invalid_selections):
+            showMessage('Unsupported Corpora', str(invalid_selections))

@@ -10,6 +10,7 @@
 
         BoxLayout:
             orientation: 'horizontal'
+            padding: [0, 200, 0, 0]
             Label:
                 size_hint: (.3, 1)
                 text: 'User Name'
@@ -17,10 +18,11 @@
                 id: ti_username
                 size_hint: (.7, 1)
                 multiline: False
-                font_size: 150
+                font_size: 50
 
         BoxLayout:
             orientation: 'horizontal'
+            padding: [0, 0, 0, 200]
             Label:
                 size_hint: (.3, 1)
                 text: 'Password'
@@ -29,10 +31,11 @@
                 size_hint: (.7, 1)
                 multiline: False
                 password: True
-                font_size: 150
+                font_size: 50
 
         BoxLayout:
             orientation: 'horizontal'
+            size_hint: (1, .2)
             Button:
                 text: 'Login'
                 on_press: root.login()
@@ -105,31 +108,53 @@
                 text: 'USER STATS'
 
 <CorpusScreen>:
-    GridLayout:
-        cols: 1
 
-        Button:
-            text: 'Load'
-            on_press: root.show_file_dialog()
+    BoxLayout:
+        orientation: 'vertical'
+
+        GridLayout:
+            cols: 1
+
+            Button:
+                text: 'Load'
+                on_press: root.show_file_dialog()
 
 # DIALOGS
+
+<MessageDialog>:
+    BoxLayout:
+        orientation: 'vertical'
+        size: root.size
+        pos: root.pos
+
+        Label:
+            id: lb_message
+            text: root.message
+
+        Button:
+            size_hint: (1, .2)
+            text: 'Cancel'
+            on_press: root.cancel()
+
 
 <FileDialog>:
 
     BoxLayout:
+        orientation: 'vertical'
         size: root.size
         pos: root.pos
-        orientation: 'vertical'
 
         FileChooserListView:
             id: filechooser
 
         BoxLayout:
             Button:
+                size_hint: (1, .2)
                 text: 'Cancel'
                 on_release: root.cancel()
 
             Button:
+                size_hint: (1, .2)
                 text: 'Open'
-                on_release: root.load(filechooser.path, filechooser.selection)
+                on_release: root.load(filechooser.selection)
 
