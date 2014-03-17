@@ -1,9 +1,8 @@
-from accipiokey.loggers import LinuexEventDistpatcher
+from accipiokey.loggers import LinuxEventDistpatcher
+from accipiokey.utils import *
 
 from kivy.uix.screenmanager import Screen
 from kivy.clock import Clock
-from kivy.uix.popup import Popup
-from kivy.uix.label import Label
 
 from pymongo import MongoClient
 
@@ -12,22 +11,36 @@ from pymongo import MongoClient
 client = MongoClient()
 db = client.accipiokey
 
+# shared screen data
+current_user = None
+
 class MainScreen(Screen):
 
     def __init__(self, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
-        self._logger = LinuexEventDistpatcher.instance()
-        self._logger.bind(on_keyboard_state_change=self.callback)
 
-        Clock.schedule_interval(self._logger.fetch_keys, 1 / 30.0)
-
-    def callback(self, instance, value):
-        self.ids.lb_simple.text = str(value)
+    def logout(self):
+        current_user = None
+        self.manager.current = 'login'
 
 class LoginScreen(Screen):
 
     def login(self):
-        pass
+        users = db.accipiokey_users
+
+        username = self.ids.ti_username.text
+        password = self.ids.ti_password.text
+
+        user = {'username': username, 'password': password}
+
+        if not users.find(user).count():
+            showMessage('', 'Invalid login credentials')
+            return
+
+        current_user = user
+        self.manager.current = 'main'
+        self.ids.ti_username.text = ''
+        self.ids.ti_password.text = ''
 
 class RegisterScreen(Screen):
 
@@ -42,20 +55,12 @@ class RegisterScreen(Screen):
 
         # check if username field is empty
         if not username:
-            popup = Popup(title='Empty User Name',
-                content=Label(text='Please enter in a user name.'),
-                size_hint=(None, None),
-                size=(300, 300))
-            popup.open()
+            showMessage("Empty Field", "Please enter in a user name.")
             return
 
         # check if either password field is empty
         if not password1 or not password2:
-            popup = Popup(title='Empty Password',
-                content=Label(text='Please enter matching passwords.'),
-                size_hint=(None, None),
-                size=(300, 300))
-            popup.open()
+            showMessage('Empty Field', 'Please enter matching passwords.')
             return
 
         # check if passwords match
@@ -71,21 +76,17 @@ class RegisterScreen(Screen):
                 user['password'] = password1
                 users.insert(user)
                 self.manager.current = 'login'
+                self.ids.ti_username.text = ''
+                self.ids.ti_password1.text = ''
+                self.ids.ti_password2.text = ''
+                return
             else:
                 # user already registered
-                popup = Popup(title='Invalid User Name',
-                    content=Label(text='User is already registered'),
-                    size_hint=(None, None),
-                    size=(300, 300))
-                popup.open()
+                showMessage('Ivalid User Name', 'User name is already registered.')
                 return
         else:
             # passwords do not match
-            popup = Popup(title='Mismatched Password',
-                content=Label(text='Please enter matching passwords.'),
-                size_hint=(None, None),
-                size=(300, 300))
-            popup.open()
+            showMessage('Mismatched Passwords', 'Please enter matching passwords.')
             return
 
 

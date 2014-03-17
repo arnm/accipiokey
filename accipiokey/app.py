@@ -3,7 +3,9 @@ import kivy
 kivy.require('1.8.0')
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager
-from accipiokey.screen import LoginScreen, RegisterScreen, MainScreen
+from kivy.config import Config
+from accipiokey.screens import LoginScreen, RegisterScreen, MainScreen
+
 
 class AccipioKeyApp(App):
     title = 'AccipioKey'

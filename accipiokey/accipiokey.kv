@@ -1,26 +1,42 @@
 #: kivy 1.8.0
 
 <LoginScreen>:
-    GridLayout:
-        cols: 3
-        Label:
-            text: 'User Name'
-        TextInput:
-            id: ti_username
-            multiline: False
-        Label:
-            text: 'Password'
-        TextInput:
-            id: ti_password
-            multiline: False
-            password: True
-        Button:
-            text: 'Login'
-            on_press: root.login()
-        Button:
-            id: btn_register
-            text: 'Register'
-            on_press: root.manager.current = 'register'
+
+    BoxLayout:
+        orientation: 'vertical'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            Label:
+                size_hint: (.3, 1)
+                text: 'User Name'
+            TextInput:
+                id: ti_username
+                size_hint: (.7, 1)
+                multiline: False
+                font_size: 150
+
+        BoxLayout:
+            orientation: 'horizontal'
+            Label:
+                size_hint: (.3, 1)
+                text: 'Password'
+            TextInput:
+                id: ti_password
+                size_hint: (.7, 1)
+                multiline: False
+                password: True
+                font_size: 150
+
+        BoxLayout:
+            orientation: 'horizontal'
+            Button:
+                text: 'Login'
+                on_press: root.login()
+            Button:
+                id: btn_register
+                text: 'Register'
+                on_press: root.manager.current = 'register'
 
 <RegisterScreen>:
     GridLayout:
@@ -52,14 +68,38 @@
             on_press: root.register()
 
 <MainScreen>:
-    GridLayout:
-        cols: 1
-        Button:
-            id: btn_logout
-            text: 'Logout'
-            on_press: root.logout()
-        Label:
-            id: lb_simple
+    BoxLayout:
+        id: bl_main
+        orientation: 'horizontal'
+
+        BoxLayout:
+            id: gl_settings
+            orientation: 'vertical'
+
+            Button:
+                id: btn_courpus
+                size_hint: (.4, 1)
+                text: 'Courpus'
+            Button:
+                id: btn_bindings
+                size_hint: (.4, 1)
+                text: 'Bindings'
+            Button:
+                id: btn_playground
+                size_hint: (.4, 1)
+                text: 'Playground'
+            Button:
+                id: btn_advanced
+                size_hint: (.4, 1)
+                text: 'Advanced'
+
+        GridLayout:
+            id: gl_user_stats
+            cols: 1
+
+            Label:
+                text: 'USER STATS'
+
 
 
 

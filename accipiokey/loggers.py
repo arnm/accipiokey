@@ -212,13 +212,9 @@ class WindowsLogger(BaseLogger):
     def log_forever():
         pass
 
-if __name__ == '__main__':
-    logger = LinuxLogger.instance()
-    logger.log_forever()
 
 @ThreadSafeSingleton
-class LinuexEventDistpatcher(EventDispatcher):
-
+class LinuxEventDistpatcher(EventDispatcher):
 
     def __init__(self, **kwargs):
 
@@ -290,7 +286,6 @@ class LinuexEventDistpatcher(EventDispatcher):
                 0b00000100: ("[", "{"),
                 0b00001000: ("]", "}"),
                 0b00010000: "<enter>",
-                #0b00100000: "<left ctrl>",
                 0b01000000: ("a", "A"),
                 0b10000000: ("s", "S"),
             },
@@ -307,7 +302,6 @@ class LinuexEventDistpatcher(EventDispatcher):
             6: {
                 0b00000001: ("'", "\""),
                 0b00000010: ("`", "~"),
-                #0b00000100: "<left shift>",
                 0b00001000: ("\\", "|"),
                 0b00010000: ("z", "Z"),
                 0b00100000: ("x", "X"),
@@ -321,17 +315,11 @@ class LinuexEventDistpatcher(EventDispatcher):
                 0b00001000: (",", "<"),
                 0b00010000: (".", ">"),
                 0b00100000: ("/", "?"),
-                #0b01000000: "<right shift>",
             },
             8: {
-                #0b00000001: "<left alt>",
                 0b00000010: " ",
                 0b00000100: "<caps lock>",
-            },
-            13: {
-                #0b00000010: "<right ctrl>",
-                #0b00010000: "<right alt>",
-            },
+            }
         }
 
         self.register_event_type('on_keyboard_state_change')
