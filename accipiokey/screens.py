@@ -1,8 +1,10 @@
 from accipiokey.loggers import LinuxEventDistpatcher
 from accipiokey.utils import *
+from accipiokey.dialogs import FileDialog
 
 from kivy.uix.screenmanager import Screen
 from kivy.clock import Clock
+from kivy.properties import ObjectProperty
 
 from pymongo import MongoClient
 
@@ -13,15 +15,6 @@ db = client.accipiokey
 
 # shared screen data
 current_user = None
-
-class MainScreen(Screen):
-
-    def __init__(self, **kwargs):
-        super(MainScreen, self).__init__(**kwargs)
-
-    def logout(self):
-        current_user = None
-        self.manager.current = 'login'
 
 class LoginScreen(Screen):
 
@@ -88,6 +81,33 @@ class RegisterScreen(Screen):
             # passwords do not match
             showMessage('Mismatched Passwords', 'Please enter matching passwords.')
             return
+
+
+class MainScreen(Screen):
+
+    def __init__(self, **kwargs):
+        super(MainScreen, self).__init__(**kwargs)
+
+    def logout(self):
+        current_user = None
+        self.manager.current = 'login'
+
+
+class CorpusScreen(Screen):
+
+    def dismiss_file_dialog(self):
+        self._popup.dismiss()
+
+    def show_file_dialog(self):
+        content = FileDialog(load=self.load, cancel=self.dismiss_file_dialog)
+        self._popup = Popup(title='Load Corpus', content=content)
+        self._popup.open()
+
+    def load(self, path, filename):
+        print(path, filename)
+
+
+
 
 
 

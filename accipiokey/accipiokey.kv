@@ -1,5 +1,8 @@
 #: kivy 1.8.0
 
+
+# SCREENS
+
 <LoginScreen>:
 
     BoxLayout:
@@ -77,9 +80,10 @@
             orientation: 'vertical'
 
             Button:
-                id: btn_courpus
+                id: btn_corpus
                 size_hint: (.4, 1)
-                text: 'Courpus'
+                text: 'Corpus'
+                on_press: root.manager.current = 'corpus'
             Button:
                 id: btn_bindings
                 size_hint: (.4, 1)
@@ -100,6 +104,32 @@
             Label:
                 text: 'USER STATS'
 
+<CorpusScreen>:
+    GridLayout:
+        cols: 1
 
+        Button:
+            text: 'Load'
+            on_press: root.show_file_dialog()
 
+# DIALOGS
+
+<FileDialog>:
+
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: 'vertical'
+
+        FileChooserListView:
+            id: filechooser
+
+        BoxLayout:
+            Button:
+                text: 'Cancel'
+                on_release: root.cancel()
+
+            Button:
+                text: 'Open'
+                on_release: root.load(filechooser.path, filechooser.selection)
 
