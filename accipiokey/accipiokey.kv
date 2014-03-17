@@ -1,0 +1,65 @@
+#: kivy 1.8.0
+
+<LoginScreen>:
+    GridLayout:
+        cols: 3
+        Label:
+            text: 'User Name'
+        TextInput:
+            id: ti_username
+            multiline: False
+        Label:
+            text: 'Password'
+        TextInput:
+            id: ti_password
+            multiline: False
+            password: True
+        Button:
+            text: 'Login'
+            on_press: root.login()
+        Button:
+            id: btn_register
+            text: 'Register'
+            on_press: root.manager.current = 'register'
+
+<RegisterScreen>:
+    GridLayout:
+        cols: 2
+        Label:
+            text: 'User Name'
+        TextInput:
+            id: ti_username
+            multiline: False
+        Label:
+            text: 'Password'
+        TextInput:
+            id: ti_password1
+            multiline: False
+            password: True
+        Label:
+            text: 'Retype Password'
+        TextInput:
+            id: ti_password2
+            multiline: False
+            password: True
+        Button:
+            id: btn_cancel
+            text: 'Cancel'
+            on_press: root.manager.current = 'login'
+        Button:
+            id: btn_register
+            text: 'Register'
+            on_press: root.register()
+
+<MainScreen>:
+    GridLayout:
+        cols: 1
+        Button:
+            id: btn_logout
+            text: 'Logout'
+            on_press: root.logout()
+        Label:
+            id: lb_simple
+
+
+
