@@ -1,5 +1,5 @@
 from accipiokey.database import *
-from accipiokey.documents import User, Corpus
+from accipiokey.documents import User
 from accipiokey.modals import FileModal
 from accipiokey.utils import *
 from accipiokey.widgets import *
