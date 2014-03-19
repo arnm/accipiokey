@@ -4,6 +4,7 @@ from accipiokey.loggers import LinuxEventDistpatcher
 from accipiokey.modals import FileModal
 from accipiokey.utils import *
 from accipiokey.widgets import *
+from accipiokey.dispatchers import KeyboardEventDispatcher
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -28,9 +29,19 @@ class AccipioKeyApp(App):
         self._user = None
         self._sm = ScreenManager()
 
+        # events
+        self._ked = KeyboardEventDispatcher()
+        self._ked.bind(on_key_event=self.on_key_event_callback)
+
     @property
     def user(self):
         return self._user
+
+    def build(self):
+        self._sm.add_widget(LoginScreen(name=self.LOGIN_SCREEN))
+        self._sm.add_widget(RegisterScreen(name=self.REGISTER_SCREEN))
+        self._sm.add_widget(HomeScreen(name=self.HOME_SCREEN))
+        return self._sm
 
     def login(self, username, password):
         users = db.accipiokey_users
@@ -41,6 +52,7 @@ class AccipioKeyApp(App):
 
         self._user = User(users.find_one(user))
         self._sm.current = self.HOME_SCREEN
+        Clock.schedule_interval(self._ked.poll_keyboard, 0.5)
         return True
 
     def add_corpus(self, path):
@@ -49,7 +61,6 @@ class AccipioKeyApp(App):
 
         with open(path, 'r') as f:
             blob = TextBlob(f.read())
-            print(blob)
 
         return True
 
@@ -57,11 +68,9 @@ class AccipioKeyApp(App):
         self._user = None
         return True
 
-    def build(self):
-        self._sm.add_widget(LoginScreen(name=self.LOGIN_SCREEN))
-        self._sm.add_widget(RegisterScreen(name=self.REGISTER_SCREEN))
-        self._sm.add_widget(HomeScreen(name=self.HOME_SCREEN))
-        return self._sm
+    def on_key_event_callback(self, instance):
+        print(instance.key_event)
+
 
 class LoginScreen(Screen):
 
@@ -113,7 +122,6 @@ class RegisterScreen(Screen):
 
         # check if passwords match
         if self.password1 == self.password2:
-            # create user
             user = { 'username': self.username }
 
             # check if user is already registered
@@ -130,8 +138,6 @@ class RegisterScreen(Screen):
         else:
             # passwords do not match
             showMessage('Mismatched Passwords', 'Please enter matching passwords.')
-            return
-
 
 class HomeScreen(Screen):
 
