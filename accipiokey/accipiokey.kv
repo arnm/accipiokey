@@ -1,81 +1,132 @@
 #: kivy 1.8.0
 
-
 # SCREENS
 
 <LoginScreen>:
 
-    BoxLayout:
-        orientation: 'vertical'
+    username: ti_username.text
+    password: ti_password.text
 
-        BoxLayout:
-            orientation: 'horizontal'
-            padding: [0, 200, 0, 0]
-            Label:
-                size_hint: (.3, 1)
-                text: 'User Name'
-            TextInput:
-                id: ti_username
-                size_hint: (.7, 1)
-                multiline: False
-                font_size: 50
+    GridLayout:
+        rows: 2
+        padding: "10dp"
 
-        BoxLayout:
-            orientation: 'horizontal'
-            padding: [0, 0, 0, 200]
-            Label:
-                size_hint: (.3, 1)
-                text: 'Password'
-            TextInput:
-                id: ti_password
-                size_hint: (.7, 1)
-                multiline: False
-                password: True
-                font_size: 50
+        AnchorLayout:
+            anchor_x: 'center'
+            anchor_y: 'center'
 
-        BoxLayout:
-            orientation: 'horizontal'
-            size_hint: (1, .2)
-            Button:
-                text: 'Login'
-                on_press: root.login()
-            Button:
-                id: btn_register
-                text: 'Register'
-                on_press: root.manager.current = 'register'
+            GridLayout:
+                cols: 2
+                size_hint: (1, None)
+                row_default_height: "40dp"
+                row_force_default: True
+                spacing: "10dp"
+
+                Label:
+                    size_hint_x: .2
+                    text: 'Username'
+                TabTextInput:
+                    id: ti_username
+                    next_widget: ti_password
+                    on_text_validate: ti_password.focus = True
+                    font_size: "25dp"
+                Label:
+                    size_hint_x: .2
+                    text: 'Password'
+                TabTextInput:
+                    id: ti_password
+                    password: True
+                    next_widget: ti_username
+                    on_text_validate: root.login()
+                    font_size: "25dp"
+
+        AnchorLayout:
+            anchor_x: 'right'
+            anchor_y: 'top'
+
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint: (None, None)
+                height: "40dp"
+                width: "200dp"
+
+                Button:
+                    id: btn_login
+                    text: 'Login'
+                    on_press: root.login()
+                Button:
+                    id: btn_register
+                    text: 'Register'
+                    on_press: root.manager.current = 'register'
 
 <RegisterScreen>:
-    GridLayout:
-        cols: 2
-        Label:
-            text: 'User Name'
-        TextInput:
-            id: ti_username
-            multiline: False
-        Label:
-            text: 'Password'
-        TextInput:
-            id: ti_password1
-            multiline: False
-            password: True
-        Label:
-            text: 'Retype Password'
-        TextInput:
-            id: ti_password2
-            multiline: False
-            password: True
-        Button:
-            id: btn_cancel
-            text: 'Cancel'
-            on_press: root.manager.current = 'login'
-        Button:
-            id: btn_register
-            text: 'Register'
-            on_press: root.register()
+    username: ti_username.text
+    password1: ti_password1.text
+    password2: ti_password2.text
 
-<MainScreen>:
+    GridLayout:
+        rows: 2
+        padding: "10dp"
+
+        AnchorLayout:
+            anchor_x: 'center'
+            anchor_y: 'center'
+
+            GridLayout:
+                cols: 2
+                size_hint: (1, None)
+                row_default_height: "40dp"
+                row_force_default: True
+                spacing: "10dp"
+
+                Label:
+                    size_hint_x: .2
+                    text: 'Username'
+                TabTextInput:
+                    id: ti_username
+                    next_widget: ti_password1
+                    on_text_validate: ti_password1.focus = True
+                    font_size: "25dp"
+                Label:
+                    size_hint_x: .2
+                    text: 'Password'
+                TabTextInput:
+                    id: ti_password1
+                    password: True
+                    next_widget: ti_password2
+                    on_text_validate: ti_password2.focus = True
+                    font_size: "25dp"
+                Label:
+                    size_hint_x: .2
+                    text: 'Retype Password'
+                TabTextInput:
+                    id: ti_password2
+                    password: True
+                    next_widget: ti_username
+                    on_text_validate: root.register()
+                    font_size: "25dp"
+
+        AnchorLayout:
+            anchor_x: 'right'
+            anchor_y: 'top'
+
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint: (None, None)
+                height: "40dp"
+                width: "200dp"
+
+                Button:
+                    id: btn_cancel
+                    text: 'Cancel'
+                    on_press: root.finish()
+                Button:
+                    id: btn_register
+                    text: 'Register'
+                    on_press: root.register()
+
+<HomeScreen>:
     BoxLayout:
-        id: bl_main
         orientation: 'horizontal'
 
         BoxLayout:
@@ -83,10 +134,10 @@
             orientation: 'vertical'
 
             Button:
-                id: btn_corpus
+                id: btn_corpora
                 size_hint: (.4, 1)
-                text: 'Corpus'
-                on_press: root.manager.current = 'corpus'
+                text: 'Corpora'
+                on_press: root.manager.current = 'corpora'
             Button:
                 id: btn_bindings
                 size_hint: (.4, 1)
@@ -107,7 +158,7 @@
             Label:
                 text: 'USER STATS'
 
-<CorpusScreen>:
+<CorporaScreen>:
 
     BoxLayout:
         orientation: 'vertical'
@@ -119,42 +170,49 @@
                 text: 'Load'
                 on_press: root.show_file_dialog()
 
-# DIALOGS
+# Modals
 
-<MessageDialog>:
+<MessageModal>:
     BoxLayout:
         orientation: 'vertical'
-        size: root.size
-        pos: root.pos
 
         Label:
             id: lb_message
             text: root.message
 
-        Button:
-            size_hint: (1, .2)
-            text: 'Cancel'
-            on_press: root.cancel()
+        AnchorLayout:
+            anchor_y: 'bottom'
+            anchor_x: 'right'
+
+            Button:
+                size_hint: (None, None)
+                height: '40dp'
+                width: '100dp'
+                text: 'Cancel'
+                on_press: root.cancel()
 
 
-<FileDialog>:
-
+<FileModal>:
     BoxLayout:
         orientation: 'vertical'
-        size: root.size
-        pos: root.pos
 
         FileChooserListView:
             id: filechooser
 
-        BoxLayout:
-            Button:
-                size_hint: (1, .2)
-                text: 'Cancel'
-                on_release: root.cancel()
+        AnchorLayout:
+            anchor_y: 'bottom'
+            anchor_x: 'right'
 
-            Button:
-                size_hint: (1, .2)
-                text: 'Open'
-                on_release: root.load(filechooser.selection)
+            BoxLayout:
+                size_hint: (None, None)
+                height: '40dp'
+                width: '200dp'
+
+                Button:
+                    text: 'Cancel'
+                    on_release: root.cancel()
+
+                Button:
+                    text: 'Open'
+                    on_release: root.load(filechooser.selection)
 

@@ -1,83 +1,91 @@
-
-from accipiokey.dialogs import FileDialog
+from accipiokey.modals import FileModal
+from accipiokey.widgets import *
 from accipiokey.loggers import LinuxEventDistpatcher
 from accipiokey.utils import *
+from accipiokey.database import *
 
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import Screen
+from kivy.properties import StringProperty
 
 import mimetypes
-from pymongo import MongoClient
 from textblob import TextBlob
-
-# establish mongodb connection
-client = MongoClient()
-db = client.accipiokey
 
 # shared screen data
 current_user = None
 
 class LoginScreen(Screen):
 
+    username = StringProperty()
+    password = StringProperty()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
     def login(self):
         users = db.accipiokey_users
-
-        username = self.ids.ti_username.text
-        password = self.ids.ti_password.text
-
-        user = {'username': username, 'password': password}
+        [print(user) for user in users.find()]
+        user = {'username': self.username, 'password': self.password}
 
         if not users.find(user).count():
-            showMessage('', 'Invalid login credentials')
+            showMessage('Invalid credentials', 'Please try again.')
             return
 
         current_user = user
-        self.manager.current = 'main'
+        self.manager.current = 'home'
         self.ids.ti_username.text = ''
         self.ids.ti_password.text = ''
 
 class RegisterScreen(Screen):
 
+    username = StringProperty()
+    password1 = StringProperty()
+    password2 = StringProperty()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def clear(self):
+        self.ids.ti_username.text = ''
+        self.ids.ti_password1.text = ''
+        self.ids.ti_password2.text = ''
+
+    def finish(self):
+        self.clear()
+        self.manager.current = 'login'
+
     def register(self):
 
         users = db.accipiokey_users
 
-        # get registration fields
-        username = self.ids.ti_username.text
-        password1 = self.ids.ti_password1.text
-        password2 = self.ids.ti_password2.text
-
         # check if username field is empty
-        if not username:
-            showMessage("Empty Field", "Please enter in a user name.")
+        if not self.username:
+            showMessage("Empty Field", "Please enter in a username.")
             return
 
         # check if either password field is empty
-        if not password1 or not password2:
+        if not self.password1 or not self.password2:
             showMessage('Empty Field', 'Please enter matching passwords.')
             return
 
         # check if passwords match
-        if password1 == password2:
+        if self.password1 == self.password2:
             # create user
             user = {
-                'username': username,
+                'username': self.username,
             }
 
             # check if user is already registered
             if not users.find(user).count():
                 # insert into db
-                user['password'] = password1
+                user['password'] = self.password1
                 users.insert(user)
-                self.manager.current = 'login'
-                self.ids.ti_username.text = ''
-                self.ids.ti_password1.text = ''
-                self.ids.ti_password2.text = ''
+                self.finish()
                 return
             else:
                 # user already registered
-                showMessage('Ivalid User Name', 'User name is already registered.')
+                showMessage('Invalid Username', 'Username is already registered.')
                 return
         else:
             # passwords do not match
@@ -85,30 +93,27 @@ class RegisterScreen(Screen):
             return
 
 
-class MainScreen(Screen):
+class HomeScreen(Screen):
 
     def __init__(self, **kwargs):
-        super(MainScreen, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def logout(self):
         current_user = None
         self.manager.current = 'login'
 
-
-class CorpusScreen(Screen):
+class CorporaScreen(Screen):
 
     def __init__(self, **kwargs):
-        super(CorpusScreen, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._corpora = []
-        self._popup = None
-
-    def dismiss_file_dialog(self):
-        self._popup.dismiss()
 
     def show_file_dialog(self):
-        content = FileDialog(load=self.load, cancel=self.dismiss_file_dialog)
-        self._popup = Popup(title='Load Corpus', content=content)
-        self._popup.open()
+        def dismiss():
+            modal.dismiss()
+
+        modal = FileModal(title='Load Corpus',load=self.load, cancel=dismiss)
+        modal.open()
 
     def load(self, selections):
         self.dismiss_file_dialog()
