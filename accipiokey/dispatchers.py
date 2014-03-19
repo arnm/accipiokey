@@ -1,7 +1,9 @@
-from evdev import InputDevice, categorize, ecodes
+from accipiokey.utils import keycodeToUnicode
+
+from evdev import InputDevice, categorize, ecodes, KeyEvent
 
 from kivy.event import EventDispatcher
-from kivy.properties import ObjectProperty
+from kivy.properties import ObjectProperty, ListProperty
 
 from select import select
 from singleton.singleton import ThreadSafeSingleton
@@ -30,43 +32,55 @@ class KeyboardEventDispatcher(EventDispatcher):
 @ThreadSafeSingleton
 class KeyboardStateEventDispatcher(EventDispatcher):
 
-    keyboard_state = ObjectProperty()
+    active_keys = ListProperty()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.register_event_type('on_keyboard_state_change')
 
         # listen
-        self._ked = KeyboardStateEventDispatcher.instance()
+        self._ked = KeyboardEventDispatcher.instance()
         self._ked.bind(on_key_event=self.on_key_event)
 
     def on_keyboard_state_change(self, *largs):
         pass
 
-    def on_key_event(self):
-        pass
+    def on_key_event(self, instance):
+        keycode = instance.key_event.keycode
+        keystate = instance.key_event.keystate
+
+        if keystate == KeyEvent.key_down:
+            if keycode not in self.active_keys:
+                self.active_keys.append(instance.key_event.keycode)
+                self.dispatch('on_keyboard_state_change')
+        elif keystate == KeyEvent.key_up:
+            if keycode in self.active_keys:
+                self.active_keys.remove(instance.key_event.keycode)
+                self.dispatch('on_keyboard_state_change')
 
 @ThreadSafeSingleton
 class ShortcutEventDistpacher(EventDispatcher):
 
     shortcut_event = ObjectProperty()
+    shortcuts = ListProperty()
 
-    def __init__(self, shortcuts, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._shortcuts = shortcuts
 
         # register events
         self.register_event_type('on_shortcut_event')
 
         # listen
         self._ksd = KeyboardStateEventDispatcher.instance()
-        self._ksd.bind(on_key_event=self.on_keyboard_state_change)
+        self._ksd.bind(on_keyboard_state_change=self.on_keyboard_state_change)
 
-    def on_shortcut_event(self):
-        pass
+    def on_shortcut_event(self, *largs):
+        print(self.shortcut_event)
 
     def on_keyboard_state_change(self, instance):
-        pass
+        if instance.active_keys in self.shortcuts:
+            self.shortcut_event = instance.active_keys
+            self.dispatch('on_shortcut_event')
 
 @ThreadSafeSingleton
 class WordEventDispatcher(EventDispatcher):
@@ -78,13 +92,13 @@ class WordEventDispatcher(EventDispatcher):
         self.register_event_type('on_word_event')
 
         # listen
-        self._ked = KeyboardStateEventDispatcher.instance()
-        self._ked.bind(on_key_event=self.on_key_event)
+        self._ksd = KeyboardStateEventDispatcher.instance()
+        self._ksd.bind(on_keyboard_state_change=self.on_keyboard_state_change)
 
-    def on_word_event(self):
+    def on_word_event(self, *largs):
         pass
 
-    def on_key_event(self, instance):
+    def on_keyboard_state_change(self, instance):
         pass
 
 @ThreadSafeSingleton
@@ -95,13 +109,14 @@ class SuggestionEventDispatcher(EventDispatcher):
         super().__init__(**kwargs)
         self.register_event_type('on_suggestion_event')
 
-        self._ked = KeyboardEventDispatcher.instance()
-        self._ked.bind(on_key_event=self.on_key_event)
+        # listen
+        self._ksd = KeyboardStateEventDispatcher.instance()
+        self._ksd.bind(on_keyboard_state_change=self.on_keyboard_state_change)
 
-    def on_suggestion_event(self):
+    def on_suggestion_event(self, *largs):
         pass
 
-    def on_key_event(self, instance):
+    def on_keyboard_state_change(self, instance):
         pass
 
 @ThreadSafeSingleton
@@ -115,7 +130,7 @@ class CorrectionEventDispatcher(EventDispatcher):
         self._wed = WordEventDispatcher.instance()
         self._wed.bind(on_word_event=self.on_word_event)
 
-    def on_correction_event(self):
+    def on_correction_event(self, *largs):
         pass
 
     def on_word_event(self, instance):
