@@ -3,6 +3,7 @@ from accipiokey.widgets import *
 from accipiokey.loggers import LinuxEventDistpatcher
 from accipiokey.utils import *
 from accipiokey.database import *
+from accipiokey.documents import User, Corpus
 
 from kivy.clock import Clock
 from kivy.properties import ObjectProperty
@@ -12,27 +13,20 @@ from kivy.properties import StringProperty
 import mimetypes
 from textblob import TextBlob
 
-# shared screen data
-current_user = None
-
 class LoginScreen(Screen):
 
     username = StringProperty()
     password = StringProperty()
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def login(self):
         users = db.accipiokey_users
-        [print(user) for user in users.find()]
         user = {'username': self.username, 'password': self.password}
 
         if not users.find(user).count():
             showMessage('Invalid credentials', 'Please try again.')
             return
 
-        current_user = user
+        current_user = User(users.find_one(user))
         self.manager.current = 'home'
         self.ids.ti_username.text = ''
         self.ids.ti_password.text = ''
@@ -42,9 +36,6 @@ class RegisterScreen(Screen):
     username = StringProperty()
     password1 = StringProperty()
     password2 = StringProperty()
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def clear(self):
         self.ids.ti_username.text = ''
@@ -94,9 +85,6 @@ class RegisterScreen(Screen):
 
 
 class HomeScreen(Screen):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def logout(self):
         current_user = None

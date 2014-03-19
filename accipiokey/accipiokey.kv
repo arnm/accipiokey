@@ -57,7 +57,7 @@
                 Button:
                     id: btn_register
                     text: 'Register'
-                    on_press: root.manager.current = 'register'
+                    on_press: root.manager.current = app.REGISTER_SCREEN
 
 <RegisterScreen>:
     username: ti_username.text
@@ -134,10 +134,10 @@
             orientation: 'vertical'
 
             Button:
-                id: btn_corpora
+                id: btn_add_corpus
                 size_hint: (.4, 1)
-                text: 'Corpora'
-                on_press: root.manager.current = 'corpora'
+                text: 'Add Corpus'
+                on_press: root.show_file_dialog()
             Button:
                 id: btn_bindings
                 size_hint: (.4, 1)
@@ -157,18 +157,6 @@
 
             Label:
                 text: 'USER STATS'
-
-<CorporaScreen>:
-
-    BoxLayout:
-        orientation: 'vertical'
-
-        GridLayout:
-            cols: 1
-
-            Button:
-                text: 'Load'
-                on_press: root.show_file_dialog()
 
 # Modals
 
@@ -198,6 +186,7 @@
 
         FileChooserListView:
             id: filechooser
+            filters: ['*.txt']
 
         AnchorLayout:
             anchor_y: 'bottom'
