@@ -31,22 +31,3 @@ class User(Document):
     def password(self):
         return self._password
 
-class Corpus(Document):
-
-    def __init__(self, schema):
-        self._user = schema['user']
-        self._name = schema['name']
-        self._corpus = schema['corpus']
-        self._blob = TextBlob(self._corpus)
-
-    @property
-    def user(self):
-        return self._user
-
-    @property
-    def corpus(self):
-        return self._corpus
-
-    @property
-    def blob(self):
-        return self._blob

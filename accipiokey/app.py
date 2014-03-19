@@ -1,10 +1,9 @@
 from accipiokey.database import *
 from accipiokey.documents import User, Corpus
-from accipiokey.loggers import LinuxEventDistpatcher
 from accipiokey.modals import FileModal
 from accipiokey.utils import *
 from accipiokey.widgets import *
-from accipiokey.dispatchers import KeyboardEventDispatcher
+from accipiokey.dispatchers import *
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -30,8 +29,9 @@ class AccipioKeyApp(App):
         self._sm = ScreenManager()
 
         # events
-        self._ked = KeyboardEventDispatcher()
-        self._ked.bind(on_key_event=self.on_key_event_callback)
+        self._ked = KeyboardEventDispatcher.instance()
+        self._sed = ShortcutEventDistpacher.instance()
+        self._wed = WordEventDispatcher.instance()
 
     @property
     def user(self):
@@ -67,10 +67,6 @@ class AccipioKeyApp(App):
     def logout(self):
         self._user = None
         return True
-
-    def on_key_event_callback(self, instance):
-        print(instance.key_event)
-
 
 class LoginScreen(Screen):
 
