@@ -8,6 +8,9 @@ from kivy.properties import ObjectProperty, ListProperty
 from select import select
 from singleton.singleton import ThreadSafeSingleton
 
+from datetime import datetime
+
+from threading import Thread
 
 @ThreadSafeSingleton
 class KeyboardEventDispatcher(EventDispatcher):
@@ -18,6 +21,7 @@ class KeyboardEventDispatcher(EventDispatcher):
         super().__init__(**kwargs)
         self._dev = InputDevice('/dev/input/event0')
         self.register_event_type('on_key_event')
+        self._th = None
 
     def on_key_event(self, *largs):
         pass
@@ -29,10 +33,19 @@ class KeyboardEventDispatcher(EventDispatcher):
                 self.key_event = categorize(event)
                 self.dispatch('on_key_event')
 
+    def poll_forever(self):
+        self._th = Thread(target=self._poll_forever)
+        self._th.daemon = True
+        self._th.start()
+
+    def _poll_forever(self):
+        while 1:
+            self.poll()
+
 @ThreadSafeSingleton
 class KeyboardStateEventDispatcher(EventDispatcher):
 
-    active_keys = ListProperty()
+    active_key_dict = ObjectProperty({})
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -48,14 +61,15 @@ class KeyboardStateEventDispatcher(EventDispatcher):
     def on_key_event(self, instance):
         keycode = instance.key_event.keycode
         keystate = instance.key_event.keystate
+        timestamp = instance.key_event.event.timestamp()
 
         if keystate == KeyEvent.key_down:
-            if keycode not in self.active_keys:
-                self.active_keys.append(instance.key_event.keycode)
+            if keycode not in self.active_key_dict:
+                self.active_key_dict[keycode] = timestamp
                 self.dispatch('on_keyboard_state_change')
         elif keystate == KeyEvent.key_up:
-            if keycode in self.active_keys:
-                self.active_keys.remove(instance.key_event.keycode)
+            if keycode in self.active_key_dict:
+                del self.active_key_dict[keycode]
                 self.dispatch('on_keyboard_state_change')
 
 @ThreadSafeSingleton
@@ -75,11 +89,11 @@ class ShortcutEventDistpacher(EventDispatcher):
         self._ksd.bind(on_keyboard_state_change=self.on_keyboard_state_change)
 
     def on_shortcut_event(self, *largs):
-        print(self.shortcut_event)
+        pass
 
     def on_keyboard_state_change(self, instance):
-        if instance.active_keys in self.shortcuts:
-            self.shortcut_event = instance.active_keys
+        if instance.active_key_dict in self.shortcuts:
+            self.shortcut_event = instance.active_key_dict
             self.dispatch('on_shortcut_event')
 
 @ThreadSafeSingleton
@@ -99,10 +113,11 @@ class WordEventDispatcher(EventDispatcher):
         pass
 
     def on_keyboard_state_change(self, instance):
-        pass
+        print(instance.active_key_dict)
 
 @ThreadSafeSingleton
 class SuggestionEventDispatcher(EventDispatcher):
+
     suggestion_event = ObjectProperty()
 
     def __init__(self, **kwargs):

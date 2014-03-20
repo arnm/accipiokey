@@ -30,8 +30,9 @@ class AccipioKeyApp(App):
 
         # events
         self._ked = KeyboardEventDispatcher.instance()
+        self._wed = WordEventDispatcher.instance()
         self._sed = ShortcutEventDistpacher.instance()
-        self._sed.shortcuts = [['KEY_LEFTALT', 'KEY_R']]
+        self._sed.shortcuts = [['KEY_LEFTALT', 'KEY_E']]
 
     @property
     def user(self):
@@ -52,7 +53,8 @@ class AccipioKeyApp(App):
 
         self._user = User(users.find_one(user))
         self._sm.current = self.HOME_SCREEN
-        Clock.schedule_interval(self._ked.poll, 0.5)
+        self._ked.poll_forever()
+
         return True
 
     def add_corpus(self, path):
@@ -63,6 +65,9 @@ class AccipioKeyApp(App):
             blob = TextBlob(f.read())
 
         return True
+
+    def add_snippet(self, snippet):
+        pass
 
     def logout(self):
         self._user = None
