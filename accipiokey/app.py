@@ -30,7 +30,8 @@ class AccipioKeyApp(App):
 
         # events
         self._ked = KeyboardEventDispatcher.instance()
-        self._wed = WordEventDispatcher.instance()
+        self._sed = SuggestionEventDispatcher.instance()
+        self._ced = CorrectionEventDispatcher.instance()
         self._sed = ShortcutEventDistpacher.instance()
         self._sed.shortcuts = [['KEY_LEFTALT', 'KEY_E']]
 

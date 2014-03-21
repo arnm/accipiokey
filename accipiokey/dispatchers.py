@@ -1,16 +1,14 @@
 from accipiokey.utils import keycodeToUnicode
-
+from datetime import datetime
 from evdev import InputDevice, categorize, ecodes, KeyEvent
-
 from kivy.event import EventDispatcher
-from kivy.properties import ObjectProperty, ListProperty
-
+from kivy.properties import ObjectProperty, ListProperty, DictProperty, StringProperty
 from select import select
 from singleton.singleton import ThreadSafeSingleton
-
-from datetime import datetime
-
+from textblob import TextBlob, Word
 from threading import Thread
+from time import clock, sleep
+
 
 @ThreadSafeSingleton
 class KeyboardEventDispatcher(EventDispatcher):
@@ -20,18 +18,13 @@ class KeyboardEventDispatcher(EventDispatcher):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._dev = InputDevice('/dev/input/event0')
-        self.register_event_type('on_key_event')
         self._th = None
-
-    def on_key_event(self, *largs):
-        pass
 
     def poll(self, dt=0):
         r, w, x = select([self._dev], [], [])
         for event in self._dev.read():
             if event.type == ecodes.EV_KEY:
                 self.key_event = categorize(event)
-                self.dispatch('on_key_event')
 
     def poll_forever(self):
         self._th = Thread(target=self._poll_forever)
@@ -40,113 +33,138 @@ class KeyboardEventDispatcher(EventDispatcher):
 
     def _poll_forever(self):
         while 1:
+            sleep(0.2)
             self.poll()
 
 @ThreadSafeSingleton
 class KeyboardStateEventDispatcher(EventDispatcher):
 
-    active_key_dict = ObjectProperty({})
+    keyboard_state = DictProperty()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.register_event_type('on_keyboard_state_change')
 
-        # listen
         self._ked = KeyboardEventDispatcher.instance()
-        self._ked.bind(on_key_event=self.on_key_event)
+        self._ked.bind(key_event=self.on_key_event)
 
-    def on_keyboard_state_change(self, *largs):
-        pass
+    def on_key_event(self, instance, key_event):
+        keycode = key_event.keycode
+        keystate = key_event.keystate
+        timestamp = clock()
 
-    def on_key_event(self, instance):
-        keycode = instance.key_event.keycode
-        keystate = instance.key_event.keystate
-        timestamp = instance.key_event.event.timestamp()
-
-        if keystate == KeyEvent.key_down:
-            if keycode not in self.active_key_dict:
-                self.active_key_dict[keycode] = timestamp
-                self.dispatch('on_keyboard_state_change')
+        if keystate == KeyEvent.key_down or keystate == KeyEvent.key_hold:
+            if keycode not in self.keyboard_state:
+                self.keyboard_state[keycode] = timestamp
         elif keystate == KeyEvent.key_up:
-            if keycode in self.active_key_dict:
-                del self.active_key_dict[keycode]
-                self.dispatch('on_keyboard_state_change')
+            if keycode in self.keyboard_state:
+                del self.keyboard_state[keycode]
 
 @ThreadSafeSingleton
 class ShortcutEventDistpacher(EventDispatcher):
 
-    shortcut_event = ObjectProperty()
-    shortcuts = ListProperty()
+    shortcut_event = DictProperty()
+    shortcuts = []
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # register events
-        self.register_event_type('on_shortcut_event')
-
-        # listen
         self._ksd = KeyboardStateEventDispatcher.instance()
-        self._ksd.bind(on_keyboard_state_change=self.on_keyboard_state_change)
+        self._ksd.bind(keyboard_state=self.on_keyboard_state_change)
 
-    def on_shortcut_event(self, *largs):
-        pass
-
-    def on_keyboard_state_change(self, instance):
-        if instance.active_key_dict in self.shortcuts:
-            self.shortcut_event = instance.active_key_dict
-            self.dispatch('on_shortcut_event')
+    def on_keyboard_state_change(self, instance, keyboard_state):
+        if keyboard_state in self.shortcuts:
+            self.shortcut_event = keyboard_state
 
 @ThreadSafeSingleton
 class WordEventDispatcher(EventDispatcher):
 
-    word_event = ObjectProperty()
+    last_word_event = StringProperty()
+    word_event = StringProperty()
+    word_buffer = ListProperty()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.register_event_type('on_word_event')
 
-        # listen
-        self._ksd = KeyboardStateEventDispatcher.instance()
-        self._ksd.bind(on_keyboard_state_change=self.on_keyboard_state_change)
+        self._word_delimiter_pressed = False
+        self._backspace_pressed = False
 
-    def on_word_event(self, *largs):
-        pass
+        self._ked = KeyboardEventDispatcher.instance()
+        self._ked.bind(key_event=self.on_key_event)
 
-    def on_keyboard_state_change(self, instance):
-        print(instance.active_key_dict)
+        self.bind(word_buffer=self.on_word_buffer)
+
+    def on_word_buffer(self, instance, word_buffer):
+        word_list = TextBlob(''.join(word_buffer)).words
+
+        if word_list:
+
+            if self._word_delimiter_pressed:
+                self.last_word_event = self.word_event
+                self.word_event = ''
+                self._word_delimiter_pressed = False
+                return
+
+            word_event = word_list[-1]
+            if not self.word_event == word_event:
+                self.word_event = word_list[-1]
+
+            if len(word_list) >= 2:
+                last_word_event = word_list[-2]
+                if not self.last_word_event == last_word_event:
+                    self.last_word_event = last_word_event
+        else:
+            self.last_word_event = ''
+
+    def on_key_event(self, instance, key_event):
+        keycode = key_event.keycode
+        keystate = key_event.keystate
+
+        if keystate == KeyEvent.key_down or keystate == KeyEvent.key_hold:
+            string = keycodeToUnicode(keycode)
+            if len(string) == 1:
+                self.word_buffer.append(string)
+            elif string == 'space':
+                self._word_delimiter_pressed = True
+                self.word_buffer.append(' ')
+            elif string == 'enter':
+                self._word_delimiter_pressed = True
+                self.word_buffer.append('\n')
+            elif string == 'tab':
+                self._word_delimiter_pressed = True
+                self.word_buffer.append('\t')
+            elif string == 'backspace' and self.word_buffer:
+                self._backspace_pressed = True
+                del self.word_buffer[-1]
 
 @ThreadSafeSingleton
 class SuggestionEventDispatcher(EventDispatcher):
 
-    suggestion_event = ObjectProperty()
+    suggestion_event = StringProperty()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.register_event_type('on_suggestion_event')
 
-        # listen
-        self._ksd = KeyboardStateEventDispatcher.instance()
-        self._ksd.bind(on_keyboard_state_change=self.on_keyboard_state_change)
+        self._ksd = WordEventDispatcher.instance()
+        self._ksd.bind(word_event=self.on_word_event)
 
-    def on_suggestion_event(self, *largs):
-        pass
-
-    def on_keyboard_state_change(self, instance):
-        pass
+    def on_word_event(self, instance, word_event):
+        print('\nWord Event:', word_event)
 
 @ThreadSafeSingleton
 class CorrectionEventDispatcher(EventDispatcher):
-    correction_event = ObjectProperty()
+
+    correction_event = StringProperty()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.register_event_type('on_correction_event')
 
         self._wed = WordEventDispatcher.instance()
-        self._wed.bind(on_word_event=self.on_word_event)
+        self._wed.bind(last_word_event=self.on_last_word_event)
 
-    def on_correction_event(self, *largs):
-        pass
-
-    def on_word_event(self, instance):
-        pass
+    def on_last_word_event(self, instance, last_word_event):
+        correction_list = Word(last_word_event).spellcheck()
+        if correction_list:
+            correction = correction_list[0][0]
+            if not correction == last_word_event:
+                correction_event = correction
+                print('Correction Event:', correction_event)
