@@ -1,13 +1,13 @@
-from evdev import InputDevice, categorize, ecodes, list_devices
-from select import select
+def find_second_to_last(haystack, needle):
+    found = []
+    for i, e in enumerate(haystack):
+        if e == needle:
+            found.append(i)
 
-dev = InputDevice('/dev/input/mouse1')
+    print(found)
+    if len(found) >= 2:
+        return found[-2]
+    else:
+        return found[-1]
 
-devices = map(InputDevice, list_devices())
-for device in devices:
-    print( '%-20s %-32s %s' % (device.fn, device.name, device.phys) )
-
-while True:
-    r, w, x = select([dev], [], [])
-    for event in dev.read():
-        print(categorize(event))
+print(find_second_to_last(['te', 'asf'], 'asf'))

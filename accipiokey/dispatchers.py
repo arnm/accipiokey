@@ -92,7 +92,7 @@ class WordEventDispatcher(EventDispatcher):
         self._ked.bind(key_event=self.on_key_event)
 
         self.bind(word_buffer=self.on_word_buffer)
-        self.bind(word_event= lambda i, we: print('Word Event:', we, 'Last Word:', self.last_word_event))
+        self.bind(word_event= lambda i, we: print('Last Word: (%s)' % (self.last_word_event), 'Word Event: (%s)' % we))
 
     def on_word_buffer(self, instance, word_buffer):
         word_list = TextBlob(''.join(word_buffer)).words
@@ -134,10 +134,10 @@ class WordEventDispatcher(EventDispatcher):
                 self.word_buffer.append(' ')
             elif string == 'enter':
                 self._word_delimiter_pressed = True
-                self.word_buffer.append('\n')
+                self.word_buffer.append(' ')
             elif string == 'tab':
                 self._word_delimiter_pressed = True
-                self.word_buffer.append('\t')
+                self.word_buffer.append(' ')
             elif string == 'backspace' and self.word_buffer:
                 self._backspace_pressed = True
                 del self.word_buffer[-1]
@@ -167,10 +167,15 @@ class CorrectionEventDispatcher(EventDispatcher):
         self._wed = WordEventDispatcher.instance()
         self._wed.bind(last_word_event=self.on_last_word_event)
 
-        self.bind(correction_event= lambda i, ce: print('Correction Event:', ce))
+        self.bind(correction_event= lambda i, ce: print('Correction Event: (%s)' % ce))
+
+    @property
+    def wordEventDispatcher(self):
+        return self._wed
 
     def on_last_word_event(self, instance, last_word_event):
         correction_list = Word(last_word_event).spellcheck()
         if correction_list:
             correction = correction_list[0][0]
-            self.correction_event = correction
+            if not correction == last_word_event:
+                self.correction_event = correction
