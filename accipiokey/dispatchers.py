@@ -71,8 +71,10 @@ class ShortcutEventDistpacher(EventDispatcher):
         self._ksd = KeyboardStateEventDispatcher.instance()
         self._ksd.bind(keyboard_state=self.on_keyboard_state_change)
 
+        self.bind(shortcut_event= lambda i, se: print('Shortcut Event: (%s)' % se))
+
     def on_keyboard_state_change(self, instance, keyboard_state):
-        if keyboard_state in self.shortcuts:
+        if list(keyboard_state.keys()) in self.shortcuts:
             self.shortcut_event = keyboard_state
 
 @ThreadSafeSingleton
@@ -154,7 +156,7 @@ class SuggestionEventDispatcher(EventDispatcher):
         self._ksd.bind(word_event=self.on_word_event)
 
     def on_word_event(self, instance, word_event):
-        print('\nWord Event:', word_event)
+        pass
 
 @ThreadSafeSingleton
 class CorrectionEventDispatcher(EventDispatcher):

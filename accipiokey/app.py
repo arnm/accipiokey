@@ -33,10 +33,11 @@ class AccipioKeyApp(App):
         self._ked = KeyboardEventDispatcher.instance()
         self._ced = CorrectionEventDispatcher.instance()
         self._sed = ShortcutEventDistpacher.instance()
-        self._sed.shortcuts = [['KEY_LEFTALT', 'KEY_E']]
+        self._sed.shortcuts = [['KEY_LEFTALT']]
 
         # handlers
         self._ced.bind(correction_event=correction_event_handler)
+        self._sed.bind(shortcut_event=shortcut_event_handler)
 
     @property
     def user(self):
