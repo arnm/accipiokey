@@ -4,6 +4,7 @@ from accipiokey.modals import FileModal
 from accipiokey.utils import *
 from accipiokey.widgets import *
 from accipiokey.dispatchers import *
+from accipiokey.handlers import *
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -28,9 +29,8 @@ class AccipioKeyApp(App):
         self._user = None
         self._sm = ScreenManager()
 
-        # events
+        # dispatchers
         self._ked = KeyboardEventDispatcher.instance()
-        self._sed = SuggestionEventDispatcher.instance()
         self._ced = CorrectionEventDispatcher.instance()
         self._sed = ShortcutEventDistpacher.instance()
         self._sed.shortcuts = [['KEY_LEFTALT', 'KEY_E']]

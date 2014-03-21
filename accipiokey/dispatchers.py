@@ -92,26 +92,32 @@ class WordEventDispatcher(EventDispatcher):
         self._ked.bind(key_event=self.on_key_event)
 
         self.bind(word_buffer=self.on_word_buffer)
+        self.bind(word_event= lambda i, we: print('Word Event:', we, 'Last Word:', self.last_word_event))
 
     def on_word_buffer(self, instance, word_buffer):
         word_list = TextBlob(''.join(word_buffer)).words
 
         if word_list:
 
+            if self._backspace_pressed and not self.word_buffer[-1].strip():
+                self.last_word_event = word_list[-1]
+                self.word_event = ''
+                self._backspace_pressed = False
+                return
+
             if self._word_delimiter_pressed:
-                self.last_word_event = self.word_event
+                self.last_word_event = word_list[-1]
                 self.word_event = ''
                 self._word_delimiter_pressed = False
                 return
 
-            word_event = word_list[-1]
-            if not self.word_event == word_event:
-                self.word_event = word_list[-1]
-
             if len(word_list) >= 2:
-                last_word_event = word_list[-2]
-                if not self.last_word_event == last_word_event:
-                    self.last_word_event = last_word_event
+                self.last_word_event = word_list[-2]
+            elif self.last_word_event:
+                self.last_word_event = ''
+
+            self.word_event = word_list[-1]
+
         else:
             self.last_word_event = ''
 
@@ -161,10 +167,10 @@ class CorrectionEventDispatcher(EventDispatcher):
         self._wed = WordEventDispatcher.instance()
         self._wed.bind(last_word_event=self.on_last_word_event)
 
+        self.bind(correction_event= lambda i, ce: print('Correction Event:', ce))
+
     def on_last_word_event(self, instance, last_word_event):
         correction_list = Word(last_word_event).spellcheck()
         if correction_list:
             correction = correction_list[0][0]
-            if not correction == last_word_event:
-                correction_event = correction
-                print('Correction Event:', correction_event)
+            self.correction_event = correction
