@@ -53,4 +53,3 @@ def shortcut_event_handler(instance, shortcut_event):
             if not wed.word_buffer[-1] == ' ':
                 wed.word_buffer.append(' ')
             [wed.word_buffer.append(key_event) for key_event in key_events]
-
