@@ -1,33 +1,22 @@
-from textblob import TextBlob
+from mongoengine import *
 
-class Document(object):
-
-    def __init__(self, schema):
-        self._schema = schema
-        self._id = schema['_id']
-
-    @property
-    def id(self):
-        return self._id
-
-    def __str__(self):
-        return str(self._schema)
 
 class User(Document):
+    username = StringField(required=True, max_length=30)
+    password = StringField(required=True, max_length=30)
 
-    def __init__(self, schema):
-        super().__init__(schema)
-        self._username = schema['username']
-        self._password = schema['password']
+class Writing(EmbeddedDocument):
+    title = StringField(max_length=120, required=True)
+    text = StringField()
 
-    def __repr__(self):
-        pass
+class Corpus(Document):
+    user = ReferenceField(User, reverse_delete_rule=CASCADE)
+    writings = ListField(EmbeddedDocumentField(Writing))
 
-    @property
-    def username(self):
-        return self._username
-
-    @property
-    def password(self):
-        return self._password
+class Stats(Document):
+    user = ReferenceField(User, reverse_delete_rule=CASCADE)
+    words_corrected = IntField()
+    words_generated = IntField()
+    words_completed = IntField()
+    keystrokes_saved = IntField()
 

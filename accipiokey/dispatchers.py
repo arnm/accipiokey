@@ -71,7 +71,7 @@ class ShortcutEventDistpacher(EventDispatcher):
         self._ksd = KeyboardStateEventDispatcher.instance()
         self._ksd.bind(keyboard_state=self.on_keyboard_state_change)
 
-        self.bind(shortcut_event= lambda i, se: print('Shortcut Event: (%s)' % se))
+        # self.bind(shortcut_event= (lambda i, se: print('Shortcut Event: (%s)' % se)))
 
     def on_keyboard_state_change(self, instance, keyboard_state):
         if list(keyboard_state.keys()) in self.shortcuts:
@@ -94,7 +94,7 @@ class WordEventDispatcher(EventDispatcher):
         self._ked.bind(key_event=self.on_key_event)
 
         self.bind(word_buffer=self.on_word_buffer)
-        self.bind(word_event= lambda i, we: print('Last Word: (%s)' % (self.last_word_event), 'Word Event: (%s)' % we))
+        # self.bind(word_event= lambda i, we: print('Last Word: (%s)' % (self.last_word_event), 'Word Event: (%s)' % we))
 
     def on_word_buffer(self, instance, word_buffer):
         word_list = TextBlob(''.join(word_buffer)).words
@@ -169,7 +169,7 @@ class CorrectionEventDispatcher(EventDispatcher):
         self._wed = WordEventDispatcher.instance()
         self._wed.bind(last_word_event=self.on_last_word_event)
 
-        self.bind(correction_event= lambda i, ce: print('Correction Event: (%s)' % ce))
+        # self.bind(correction_event= lambda i, ce: print('Correction Event: (%s)' % ce))
 
     @property
     def wordEventDispatcher(self):

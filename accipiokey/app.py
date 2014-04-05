@@ -1,4 +1,3 @@
-from accipiokey.database import *
 from accipiokey.documents import User
 from accipiokey.modals import FileModal
 from accipiokey.utils import *
@@ -38,10 +37,6 @@ class AccipioKeyApp(App):
         # handlers
         self._ced.bind(correction_event=correction_event_handler)
         self._sed.bind(shortcut_event=shortcut_event_handler)
-
-    @property
-    def user(self):
-        return self._user
 
     def build(self):
         self._sm.add_widget(LoginScreen(name=self.LOGIN_SCREEN))
