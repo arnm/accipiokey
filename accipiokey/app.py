@@ -1,4 +1,4 @@
-from accipiokey.documents import User
+from accipiokey.documents import *
 from accipiokey.modals import FileModal
 from accipiokey.utils import *
 from accipiokey.widgets import *
@@ -14,7 +14,6 @@ from kivy.properties import StringProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.screenmanager import ScreenManager
 
-from textblob import TextBlob
 import mimetypes
 import os
 
@@ -32,7 +31,6 @@ class AccipioKeyApp(App):
         self._ked = KeyboardEventDispatcher.instance()
         self._ced = CorrectionEventDispatcher.instance()
         self._sed = ShortcutEventDistpacher.instance()
-        self._sed.shortcuts = [['KEY_LEFTALT']]
 
         # handlers
         self._ced.bind(correction_event=correction_event_handler)
@@ -76,9 +74,10 @@ class AccipioKeyApp(App):
             return False
 
         User(username, password).save()
+
         return True
 
-    def add_corpus(self, path):
+    def add_writing(self, path):
         if not self.is_logged_in:
             return False
 
@@ -86,9 +85,16 @@ class AccipioKeyApp(App):
             return False
 
         with open(path, 'r') as f:
-            blob = TextBlob(f.read())
+            title = os.path.splitext(os.path.basename(path))
+            content = f.read()
+            writing = Writing(title=title, content=content)
+            writing.save()
+            self._process_writing(writing)
 
         return True
+
+    def _process_writing(self, writing):
+        pass
 
 class LoginScreen(Screen):
 
@@ -100,11 +106,11 @@ class LoginScreen(Screen):
         self._app = AccipioKeyApp.get_running_app()
 
     def login(self):
-        if self._app.login(self.username, self.password):
-            self.ids.ti_username.text = ''
-            self.ids.ti_password.text = ''
-        else:
+        if not self._app.login(self.username, self.password):
             showMessage('Login Failed', 'Invalid credentials, please try again.')
+
+        self.ids.ti_username.text = ''
+        self.ids.ti_password.text = ''
 
 class RegisterScreen(Screen):
 
@@ -136,12 +142,17 @@ class RegisterScreen(Screen):
             showMessage('Empty Field', 'Please enter matching passwords.')
             return
 
-        # check if passwords match
-        if self.password1 == self.password2:
-            if not self._app.register(self.username, self.password1):
-                showMessage('Registration Failed', 'Please choose a different username.')
-                return
-            self.finish()
+        # check if passwords don't match
+        if not self.password1 == self.password2:
+            showMessage('Password Mismatch', 'Please enter matching passwords.')
+            return
+
+        # check if registration failed
+        if not self._app.register(self.username, self.password1):
+            showMessage('Registration Failed', 'Please choose a different username.')
+            return
+
+        self.finish()
 
 class HomeScreen(Screen):
 

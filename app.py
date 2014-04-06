@@ -7,6 +7,7 @@ TYPE = 'word'
 es = Elasticsearch()
 
 if not es.indices.exists(INDEX):
+
     es.indices.create(index=INDEX, body=
         {
             'settings': { 'index': { 'number_of_shards': 1, 'number_of_replicas': 0 } }
