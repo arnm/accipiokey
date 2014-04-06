@@ -2,11 +2,11 @@ from mongoengine import *
 
 
 class User(Document):
-    username = StringField(required=True, max_length=30)
-    password = StringField(required=True, max_length=30)
+    username = StringField(required=True, min_length=4, max_length=30)
+    password = StringField(required=True, min_length=4, max_length=30)
 
 class Writing(EmbeddedDocument):
-    title = StringField(max_length=120, required=True)
+    title = StringField(required=True, min_length=1, max_length=120)
     text = StringField()
 
 class Corpus(Document):

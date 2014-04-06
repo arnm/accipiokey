@@ -38,6 +38,14 @@ class AccipioKeyApp(App):
         self._ced.bind(correction_event=correction_event_handler)
         self._sed.bind(shortcut_event=shortcut_event_handler)
 
+    @property
+    def user(self):
+        return self._user
+
+    @property
+    def is_logged_in(self):
+        return True if self._user else False
+
     def build(self):
         self._sm.add_widget(LoginScreen(name=self.LOGIN_SCREEN))
         self._sm.add_widget(RegisterScreen(name=self.REGISTER_SCREEN))
@@ -45,32 +53,41 @@ class AccipioKeyApp(App):
         return self._sm
 
     def login(self, username, password):
-        users = db.accipiokey_users
-        user = {'username': username, 'password': password}
-
-        if not users.find(user).count():
+        # check if someone is already logged in
+        if self.is_logged_in:
             return False
 
-        self._user = User(users.find_one(user))
+        # check if user exists
+        if not User.objects(username=username).count():
+            return False
+
+        self._user = User(username, password)
         self._sm.current = self.HOME_SCREEN
         self._ked.poll_forever()
+        return True
 
+    def logout(self):
+        if self.is_logged_in:
+            self._user = None
+        return True
+
+    def register(self, username, password):
+        if User.objects(username=username).count():
+            return False
+
+        User(username, password).save()
         return True
 
     def add_corpus(self, path):
+        if not self.is_logged_in:
+            return False
+
         if not mimetypes.guess_type(path)[0] == 'text/plain':
             return False
 
         with open(path, 'r') as f:
             blob = TextBlob(f.read())
 
-        return True
-
-    def add_snippet(self, snippet):
-        pass
-
-    def logout(self):
-        self._user = None
         return True
 
 class LoginScreen(Screen):
@@ -87,7 +104,7 @@ class LoginScreen(Screen):
             self.ids.ti_username.text = ''
             self.ids.ti_password.text = ''
         else:
-            showMessage('Invalid credentials', 'Please try again.')
+            showMessage('Login Failed', 'Invalid credentials, please try again.')
 
 class RegisterScreen(Screen):
 
@@ -109,8 +126,6 @@ class RegisterScreen(Screen):
         self.manager.current = self._app.LOGIN_SCREEN
 
     def register(self):
-        users = db.accipiokey_users
-
         # check if username field is empty
         if not self.username:
             showMessage("Empty Field", "Please enter in a username.")
@@ -123,22 +138,10 @@ class RegisterScreen(Screen):
 
         # check if passwords match
         if self.password1 == self.password2:
-            user = { 'username': self.username }
-
-            # check if user is already registered
-            if not users.find(user).count():
-                # insert into db
-                user['password'] = self.password1
-                users.insert(user)
-                self.finish()
+            if not self._app.register(self.username, self.password1):
+                showMessage('Registration Failed', 'Please choose a different username.')
                 return
-            else:
-                # user already registered
-                showMessage('Invalid Username', 'Username is already registered.')
-                return
-        else:
-            # passwords do not match
-            showMessage('Mismatched Passwords', 'Please enter matching passwords.')
+            self.finish()
 
 class HomeScreen(Screen):
 
@@ -154,7 +157,7 @@ class HomeScreen(Screen):
         self._file_modal.open()
 
     def load(self, selections):
-        self.dismiss_file_modal()
+        self.dismiss_file_modal();
 
         invalid_selections = []
         for selection in selections:
