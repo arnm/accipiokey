@@ -19,5 +19,5 @@ class TabTextInput(TextInput):
         if keycode[0] == 9:
             self.next_widget.focus = True
         else:
-            super()._keyboard_on_key_down(window, keycode, text, modifiers)
+            super(TabTextInput, self)._keyboard_on_key_down(window, keycode, text, modifiers)
 

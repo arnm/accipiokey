@@ -1,4 +1,4 @@
-from accipiokey.utils import keycodeToUnicode
+from accipiokey.apputils import keycodeToUnicode
 from datetime import datetime
 from evdev import InputDevice, categorize, ecodes, KeyEvent
 from kivy.event import EventDispatcher
@@ -16,7 +16,8 @@ class KeyboardEventDispatcher(EventDispatcher):
     key_event = ObjectProperty()
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        EventDispatcher.__init__(self, **kwargs)
+
         self._dev = InputDevice('/dev/input/event0')
         self._th = None
 
@@ -42,7 +43,7 @@ class KeyboardStateEventDispatcher(EventDispatcher):
     keyboard_state = DictProperty()
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        EventDispatcher.__init__(self, **kwargs)
 
         self._ked = KeyboardEventDispatcher.instance()
         self._ked.bind(key_event=self.on_key_event)
@@ -66,7 +67,7 @@ class ShortcutEventDistpacher(EventDispatcher):
     shortcuts = []
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        EventDispatcher.__init__(self, **kwargs)
 
         self._ksd = KeyboardStateEventDispatcher.instance()
         self._ksd.bind(keyboard_state=self.on_keyboard_state_change)
@@ -85,7 +86,7 @@ class WordEventDispatcher(EventDispatcher):
     word_buffer = ListProperty()
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        EventDispatcher.__init__(self, **kwargs)
 
         self._word_delimiter_pressed = False
         self._backspace_pressed = False
@@ -150,7 +151,7 @@ class SuggestionEventDispatcher(EventDispatcher):
     suggestion_event = StringProperty()
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        EventDispatcher.__init__(self, **kwargs)
 
         self._ksd = WordEventDispatcher.instance()
         self._ksd.bind(word_event=self.on_word_event)
@@ -164,7 +165,7 @@ class CorrectionEventDispatcher(EventDispatcher):
     correction_event = StringProperty()
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        EventDispatcher.__init__(self, **kwargs)
 
         self._wed = WordEventDispatcher.instance()
         self._wed.bind(last_word_event=self.on_last_word_event)

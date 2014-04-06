@@ -1,9 +1,10 @@
 from accipiokey.documents import *
 from accipiokey.modals import FileModal
-from accipiokey.utils import *
+from accipiokey.apputils import *
 from accipiokey.widgets import *
 from accipiokey.dispatchers import *
 from accipiokey.handlers import *
+from accipiokey.mappings import *
 
 from kivy.app import App
 from kivy.clock import Clock
@@ -14,6 +15,8 @@ from kivy.properties import StringProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.screenmanager import ScreenManager
 
+from elasticutils import S
+
 import mimetypes
 import os
 
@@ -23,7 +26,7 @@ class AccipioKeyApp(App):
     LOGIN_SCREEN, REGISTER_SCREEN, HOME_SCREEN = [str(i) for i in range(3)]
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super(AccipioKeyApp, self).__init__(**kwargs)
         self._user = None
         self._sm = ScreenManager()
 
@@ -70,12 +73,9 @@ class AccipioKeyApp(App):
         return True
 
     def register(self, username, password):
-        if User.objects(username=username).count():
-            return False
-
-        User(username, password).save()
-
-        return True
+        s = S(UserMappingType)
+        q = s.query(username__term=username, must=True)
+        print(q)
 
     def add_writing(self, path):
         if not self.is_logged_in:
@@ -102,7 +102,7 @@ class LoginScreen(Screen):
     password = StringProperty()
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super(LoginScreen, self).__init__(**kwargs)
         self._app = AccipioKeyApp.get_running_app()
 
     def login(self):
@@ -119,7 +119,7 @@ class RegisterScreen(Screen):
     password2 = StringProperty()
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super(RegisterScreen, self).__init__(**kwargs)
         self._app = AccipioKeyApp.get_running_app()
 
     def clear(self):
@@ -157,7 +157,7 @@ class RegisterScreen(Screen):
 class HomeScreen(Screen):
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super(HomeScreen, self).__init__(**kwargs)
         self._app = AccipioKeyApp.get_running_app()
 
     def dismiss_file_modal(self):

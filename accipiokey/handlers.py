@@ -1,5 +1,5 @@
 
-from accipiokey.utils import *
+from accipiokey.apputils import *
 from accipiokey.dispatchers import WordEventDispatcher
 
 def correction_event_handler(instance, correction_event):

@@ -1,8 +1,10 @@
-from accipiokey.helpers import *
+from accipiokey.apputils import *
 from elasticsearch import Elasticsearch
 
 INDEX = 'accipiokey'
 TYPE = 'word'
+
+print(__name__)
 
 es = Elasticsearch()
 
@@ -13,6 +15,7 @@ if not es.indices.exists(INDEX):
             'settings': { 'index': { 'number_of_shards': 1, 'number_of_replicas': 0 } }
         }
     )
+
     mapping = {
             'properties': {
                 'text': {

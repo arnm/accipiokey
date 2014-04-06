@@ -1,18 +1,33 @@
+class MetaSettings(type):
+
+    @property
+    def URLS(cls):
+        return cls.URLS
+
+    @classmethod
+    def INDEX(cls):
+        return cls.INDEX
+
+    @property
+    def MONGODB(cls):
+        return cls.MONGODB
+
+    @property
+    def TITLE(cls):
+        return cls.TITLE
+
+    @property
+    def DEFAULT_CORPUS(cls):
+        return cls.DEFAULT_CORPUS
 
 class Settings(object):
 
-    @property
-    def INDEX(self):
-        return 'accipiokey-index'
+    __metaclass__ = MetaSettings
 
-    @property
-    def MONGODB(self):
-        return 'accipiokey'
+    URLS = ['localhost']
+    INDEX = 'accipiokey'
+    MONGODB = 'accipiokey'
+    TITLE = 'Accipio Key'
+    DEFAULT_CORPUS = 'data/words.txt'
 
-    @property
-    def TITLE(self):
-        return 'Accipio Key'
 
-    @property
-    def DEFAULT_CORPUS(self):
-        return 'data/words.txt'
