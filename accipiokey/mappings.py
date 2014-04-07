@@ -1,10 +1,10 @@
-from accipiokey import Settings
+from accipiokey import settings
 from elasticutils import MappingType
 
 class UserMappingType(MappingType):
     @classmethod
     def get_index(cls):
-        return Settings.INDEX
+        return settings.INDEX
 
     @classmethod
     def get_mapping_type_name(cls):
@@ -13,7 +13,7 @@ class UserMappingType(MappingType):
     @classmethod
     def get_mapping(cls):
         return {
-            'user': {
+            cls.get_mapping_type_name() : {
                 'properties': {
                     'username': { 'type': 'string' },
                     'password': { 'type': 'string', 'index': 'not_analyzed' }
@@ -24,7 +24,7 @@ class UserMappingType(MappingType):
 class StatSheetMappingType(MappingType):
     @classmethod
     def get_index(cls):
-        return Settings.INDEX
+        return settings.INDEX
 
     @classmethod
     def get_mapping_type_name(cls):
@@ -33,9 +33,9 @@ class StatSheetMappingType(MappingType):
     @classmethod
     def get_mapping(cls):
         return {
-            'user': {
+            cls.get_mapping_type_name() : {
+                '_parent': { 'type': 'user' },
                 'properties': {
-                    'user': { 'type': 'user' },
                     'words_recorded': { 'type': 'integer' },
                     'words_corrected': { 'type': 'integer' },
                     'generations_completed': { 'type': 'integer' },
@@ -47,7 +47,7 @@ class StatSheetMappingType(MappingType):
 class WritingMappingType(MappingType):
     @classmethod
     def get_index(cls):
-        return Settings.INDEX
+        return settings.INDEX
 
     @classmethod
     def get_mapping_type_name(cls):
@@ -56,10 +56,10 @@ class WritingMappingType(MappingType):
     @classmethod
     def get_mapping(cls):
         return {
-            'user': {
+            cls.get_mapping_type_name() : {
+                '_parent': { 'type': 'user' },
                 'properties': {
-                    'user': { 'type': 'user' },
-                    'content': { 'type': 'string'}
+                    'content': { 'type': 'string' }
                 }
             }
         }
@@ -68,7 +68,7 @@ class WordMappingType(MappingType):
 
     @classmethod
     def get_index(cls):
-        return Settings.INDEX
+        return settings.INDEX
 
     @classmethod
     def get_mapping_type_name(cls):
@@ -77,12 +77,15 @@ class WordMappingType(MappingType):
     @classmethod
     def get_mapping(cls):
         return {
-            'word': {
+            cls.get_mapping_type_name() : {
+                '_parent': { 'type': 'user' },
                 'properties': {
-                    'type': 'completion',
-                    'index_analyzer': 'simple',
-                    'search_analyzer': 'simple',
-                    'payloads': True
+                    'text': {
+                        'type': 'completion',
+                        'index_analyzer': 'simple',
+                        'search_analyzer': 'simple',
+                        'payloads': True
+                    }
                 }
             }
         }

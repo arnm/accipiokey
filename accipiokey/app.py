@@ -1,21 +1,21 @@
-from accipiokey.documents import *
+from accipiokey import settings
 from accipiokey.modals import FileModal
 from accipiokey.apputils import *
 from accipiokey.widgets import *
 from accipiokey.dispatchers import *
 from accipiokey.handlers import *
 from accipiokey.mappings import *
+from accipiokey.esutils import index_new_words
 
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.config import Config
 from kivy.config import Config
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.screenmanager import ScreenManager
 
-from elasticutils import S
+from elasticutils import S, get_es
 
 import mimetypes
 import os
@@ -59,10 +59,12 @@ class AccipioKeyApp(App):
             return False
 
         # check if user exists
-        if not User.objects(username=username).count():
+        searcher = S(UserMappingType)
+        users_response = searcher.query(username__term=username, password__term=password, must=True)
+        if not users_response.count():
             return False
 
-        self._user = User(username, password)
+        self._user = users_response[0]
         self._sm.current = self.HOME_SCREEN
         self._ked.poll_forever()
         return True
@@ -73,9 +75,20 @@ class AccipioKeyApp(App):
         return True
 
     def register(self, username, password):
-        s = S(UserMappingType)
-        q = s.query(username__term=username, must=True)
-        print(q)
+        searcher = S(UserMappingType)
+
+        # check if username is taken
+        users_response = searcher.query(username__term=username, must=True)
+        if users_response.count():
+            return False
+
+        user_dict = { 'username': username, 'password': password }
+        new_user_dict = get_es().index(index=UserMappingType.get_index(), doc_type=UserMappingType.get_mapping_type_name(), body=user_dict)
+
+        with open(settings.DEFAULT_CORPUS) as corpus:
+            index_new_words(new_user_dict, corpus.readlines())
+
+        return True
 
     def add_writing(self, path):
         if not self.is_logged_in:
