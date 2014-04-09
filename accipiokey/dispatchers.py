@@ -1,4 +1,4 @@
-from accipiokey.apputils import keycodeToUnicode
+from accipiokey.apputils import keycodeToUnicode, compare_lists
 from accipiokey.mappings import WordMappingType
 from datetime import datetime
 from elasticutils import S, get_es
@@ -65,25 +65,7 @@ class KeyboardStateEventDispatcher(EventDispatcher):
             if keycode in self.keyboard_state:
                 del self.keyboard_state[keycode]
 
-@ThreadSafeSingleton
-class ShortcutEventDistpacher(EventDispatcher):
-
-    shortcut_event = DictProperty()
-    shortcuts = []
-
-    def __init__(self, **kwargs):
-        EventDispatcher.__init__(self, **kwargs)
-
-        self._ksd = KeyboardStateEventDispatcher.instance()
-        self._ksd.bind(keyboard_state=self.on_keyboard_state_change)
-
-        self.bind(shortcut_event= (lambda i, se:
-            logging.info('Shortcut Event: (%s)', se)))
-
-    def on_keyboard_state_change(self, instance, keyboard_state):
-        if list(keyboard_state.keys()) in self.shortcuts:
-            self.shortcut_event = keyboard_state
-
+#ToDo: Does not consider if shortcut was pressed, records any chracter pressed
 @ThreadSafeSingleton
 class WordEventDispatcher(EventDispatcher):
 
@@ -155,13 +137,52 @@ class WordEventDispatcher(EventDispatcher):
                 del self.word_buffer[-1]
 
 @ThreadSafeSingleton
+class ShortcutEventDistpacher(EventDispatcher):
+
+    shortcut_event = DictProperty()
+
+    @property
+    def shortcuts(self):
+        return self._shortcuts
+
+    @shortcuts.setter
+    def shortcuts(self, shortcuts):
+        self._shortcuts = shortcuts
+
+    def __init__(self, shortcuts=[], **kwargs):
+        EventDispatcher.__init__(self, **kwargs)
+
+        self._shortcuts = shortcuts
+
+        self._ksd = KeyboardStateEventDispatcher.instance()
+        self._ksd.bind(keyboard_state=self.on_keyboard_state_change)
+
+        self.bind(shortcut_event= (lambda i, se:
+            logging.info('Shortcut Event: (%s)', se)))
+
+    # ToDo: only works with one key shortcuts
+    def on_keyboard_state_change(self, instance, keyboard_state):
+        if list(keyboard_state.keys()) in self.shortcuts:
+            self.shortcut_event = keyboard_state
+
+@ThreadSafeSingleton
 class CompletionEventDispatcher(EventDispatcher):
 
     completion_event = StringProperty()
     possible_completion_event = StringProperty()
 
-    def __init__(self, **kwargs):
+    @property
+    def shortcut(self):
+        return self._shortcut
+
+    @shortcut.setter
+    def shortcut(self, shortcut):
+        self._shortcut = shortcut
+
+    def __init__(self, shortcut=None, **kwargs):
         EventDispatcher.__init__(self, **kwargs)
+
+        self._shortcut = shortcut
 
         self._sed = ShortcutEventDistpacher.instance()
         self._wed = WordEventDispatcher.instance()
@@ -173,23 +194,21 @@ class CompletionEventDispatcher(EventDispatcher):
             logging.info('Possible Completion (%s)', pce))
 
     def on_shortcut_event(self, instance, shortcut_event):
-
+        # ToDo: make this work
         if possible_completion_event:
             pass
 
     def on_word_event(self, instance, word_event):
-
         suggestion_name = 'completion_suggestion'
         compl_resp = get_es().suggest(index=WordMappingType.get_index(),
             body={
-                    suggestion_name: {
-                        'text': word_event,
-                        'completion': {
-                            'field': 'text'
-                        }
+                suggestion_name: {
+                    'text': word_event,
+                    'completion': {
+                        'field': 'text'
                     }
-            }
-        )
+                }
+            })
         suggestions = compl_resp[suggestion_name][0]['options']
         if suggestions:
             top_suggestion = suggestions[0]['text']
@@ -211,6 +230,7 @@ class CorrectionEventDispatcher(EventDispatcher):
         self.bind(correction_event= lambda i, ce:
             logging.info('Correction Event: (%s)', ce))
 
+    # ToDo: this should not be here
     @property
     def wordEventDispatcher(self):
         return self._wed
