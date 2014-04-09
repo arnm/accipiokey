@@ -32,6 +32,7 @@ class AccipioKeyApp(App):
 
         # dispatchers
         self._ked = KeyboardEventDispatcher.instance()
+        self._comped = CompletionEventDispatcher.instance()
         self._ced = CorrectionEventDispatcher.instance()
         self._sed = ShortcutEventDistpacher.instance()
 
@@ -83,7 +84,10 @@ class AccipioKeyApp(App):
             return False
 
         user_dict = { 'username': username, 'password': password }
-        new_user_dict = get_es().index(index=UserMappingType.get_index(), doc_type=UserMappingType.get_mapping_type_name(), body=user_dict)
+        new_user_dict = get_es().index(
+            index=UserMappingType.get_index(),
+            doc_type=UserMappingType.get_mapping_type_name(),
+            body=user_dict)
 
         with open(settings.DEFAULT_CORPUS) as corpus:
             index_new_words(new_user_dict, corpus.readlines())

@@ -21,13 +21,18 @@ def correction_event_handler(instance, correction_event):
         key_events.append(' ')
         print('Emulating: ', key_events)
         emulate_key_events(key_events)
-        instance.wordEventDispatcher.word_buffer = word_buffer[:backspace_count-1]
+        instance.wordEventDispatcher.word_buffer=word_buffer[:backspace_count-1]
         if not instance.wordEventDispatcher.word_buffer[-1] == ' ':
             instance.wordEventDispatcher.word_buffer.append(' ')
-        [instance.wordEventDispatcher.word_buffer.append(key_event) for key_event in key_events]
+        [instance.wordEventDispatcher.word_buffer.append(key_event)
+            for key_event in key_events]
 
 def shortcut_event_handler(instance, shortcut_event):
-    snippets = {'lol':'laugh out loud', 'brb':'be right back', 'tbh':'to be honest'}
+    snippets = {
+                'lol':'laugh out loud',
+                'brb':'be right back',
+                'tbh':'to be honest'
+            }
     wed = WordEventDispatcher.instance()
 
     if wed.word_event in list(snippets.keys()):

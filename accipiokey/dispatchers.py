@@ -1,5 +1,7 @@
 from accipiokey.apputils import keycodeToUnicode
+from accipiokey.mappings import WordMappingType
 from datetime import datetime
+from elasticutils import S, get_es
 from evdev import InputDevice, categorize, ecodes, KeyEvent
 from kivy.event import EventDispatcher
 from kivy.properties import ObjectProperty, ListProperty, DictProperty, StringProperty
@@ -8,7 +10,10 @@ from singleton.singleton import ThreadSafeSingleton
 from textblob import TextBlob, Word
 from threading import Thread
 from time import clock, sleep
+import logging
 
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 @ThreadSafeSingleton
 class KeyboardEventDispatcher(EventDispatcher):
@@ -72,7 +77,8 @@ class ShortcutEventDistpacher(EventDispatcher):
         self._ksd = KeyboardStateEventDispatcher.instance()
         self._ksd.bind(keyboard_state=self.on_keyboard_state_change)
 
-        # self.bind(shortcut_event= (lambda i, se: print('Shortcut Event: (%s)' % se)))
+        self.bind(shortcut_event= (lambda i, se:
+            logging.info('Shortcut Event: (%s)', se)))
 
     def on_keyboard_state_change(self, instance, keyboard_state):
         if list(keyboard_state.keys()) in self.shortcuts:
@@ -95,7 +101,10 @@ class WordEventDispatcher(EventDispatcher):
         self._ked.bind(key_event=self.on_key_event)
 
         self.bind(word_buffer=self.on_word_buffer)
-        # self.bind(word_event= lambda i, we: print('Last Word: (%s)' % (self.last_word_event), 'Word Event: (%s)' % we))
+        self.bind(word_event= lambda i, we:
+            logging.info(
+                'Last Word (%s) Word Event (%s)',
+                self.last_word_event, we))
 
     def on_word_buffer(self, instance, word_buffer):
         word_list = TextBlob(''.join(word_buffer)).words
@@ -146,18 +155,45 @@ class WordEventDispatcher(EventDispatcher):
                 del self.word_buffer[-1]
 
 @ThreadSafeSingleton
-class SuggestionEventDispatcher(EventDispatcher):
+class CompletionEventDispatcher(EventDispatcher):
 
-    suggestion_event = StringProperty()
+    completion_event = StringProperty()
+    possible_completion_event = StringProperty()
 
     def __init__(self, **kwargs):
         EventDispatcher.__init__(self, **kwargs)
 
-        self._ksd = WordEventDispatcher.instance()
-        self._ksd.bind(word_event=self.on_word_event)
+        self._sed = ShortcutEventDistpacher.instance()
+        self._wed = WordEventDispatcher.instance()
+
+        self._sed.bind(shortcut_event=self.on_shortcut_event)
+        self._wed.bind(word_event=self.on_word_event)
+
+        self.bind(possible_completion_event=lambda i, pce:
+            logging.info('Possible Completion (%s)', pce))
+
+    def on_shortcut_event(self, instance, shortcut_event):
+        pass
 
     def on_word_event(self, instance, word_event):
-        pass
+
+        suggestion_name = 'completion_suggestion'
+        compl_resp = get_es().suggest(index=WordMappingType.get_index(),
+            body={
+                    suggestion_name: {
+                        'text': word_event,
+                        'completion': {
+                            'field': 'text'
+                        }
+                    }
+            }
+        )
+        suggestions = compl_resp[suggestion_name][0]['options']
+        if suggestions:
+            top_suggestion = suggestions[0]['text']
+            self.possible_completion_event = top_suggestion
+        else:
+            self.possible_completion_event = ''
 
 @ThreadSafeSingleton
 class CorrectionEventDispatcher(EventDispatcher):
@@ -170,15 +206,25 @@ class CorrectionEventDispatcher(EventDispatcher):
         self._wed = WordEventDispatcher.instance()
         self._wed.bind(last_word_event=self.on_last_word_event)
 
-        # self.bind(correction_event= lambda i, ce: print('Correction Event: (%s)' % ce))
+        self.bind(correction_event= lambda i, ce:
+            logging.info('Correction Event: (%s)', ce))
 
     @property
     def wordEventDispatcher(self):
         return self._wed
 
     def on_last_word_event(self, instance, last_word_event):
-        correction_list = Word(last_word_event).spellcheck()
-        if correction_list:
-            correction = correction_list[0][0]
-            if not correction == last_word_event:
-                self.correction_event = correction
+
+        # check spelling of last word
+        suggestion_name = 'correction_suggestion'
+        searcher = S(WordMappingType)
+        suggest_query = searcher.suggest(
+            suggestion_name,
+            last_word_event,
+            field='text')
+        suggestions = suggest_query.suggestions()[suggestion_name][0]['options']
+
+        # correct last word if necessary
+        if suggestions:
+            top_suggestion = suggestions[0]['text']
+            self.correction_event = top_suggestion
