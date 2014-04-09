@@ -173,7 +173,9 @@ class CompletionEventDispatcher(EventDispatcher):
             logging.info('Possible Completion (%s)', pce))
 
     def on_shortcut_event(self, instance, shortcut_event):
-        pass
+
+        if possible_completion_event:
+            pass
 
     def on_word_event(self, instance, word_event):
 
