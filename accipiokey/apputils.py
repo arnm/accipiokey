@@ -7,7 +7,7 @@ from kivy.uix.button import Button
 
 from evdev import ecodes, UInput
 
-def showMessage(title, message, size=('300dp', '200dp')):
+def show_message(title, message, size=('300dp', '200dp')):
 
     def dismiss():
         modal.dismiss()
@@ -15,17 +15,20 @@ def showMessage(title, message, size=('300dp', '200dp')):
     modal = MessageModal(title=title, size=size, size_hint=(None, None), message=message, cancel=dismiss)
     modal.open()
 
-def keycodeToUnicode(keycode):
+# ToDo: fix this hack
+def keycode_to_unicode(keycode):
     return keycode.replace('KEY_', '').lower()
 
-def unicodeToKeyCode(unicode):
+# ToDo: fix this hack
+def unicode_to_keycode(unicode):
     if unicode == ' ':
         return 'KEY_' + 'space'.upper()
     return 'KEY_' + unicode.upper()
 
+# ToDo: fix this hack
 def emulate_key_events(unicodes):
     for uni in unicodes:
-        keycode = unicodeToKeyCode(uni)
+        keycode = unicode_to_keycode(uni)
         with UInput() as uinput:
             exec('uinput.write(ecodes.EV_KEY, ecodes.' + keycode + ', 1)')
             exec('uinput.write(ecodes.EV_KEY, ecodes.' + keycode + ', 0)')
@@ -41,5 +44,4 @@ def find_second_to_last(haystack, needle):
         return found[-2]
     else:
         return None
-
 

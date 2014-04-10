@@ -1,4 +1,4 @@
-
+from accipiokey import settings
 from accipiokey.apputils import *
 from accipiokey.dispatchers import WordEventDispatcher
 
@@ -27,12 +27,11 @@ def correction_event_handler(instance, correction_event):
         [instance.wordEventDispatcher.word_buffer.append(key_event)
             for key_event in key_events]
 
+# ToDo: update to work with updated ShotcutEvents
 def shortcut_event_handler(instance, shortcut_event):
-    snippets = {
-                'lol':'laugh out loud',
-                'brb':'be right back',
-                'tbh':'to be honest'
-            }
+    from accipiokey import AccipioKeyApp
+    app = AccipioKeyApp.get_running_app()
+    snippets = settings.USER_SETTINGS[app.user.username]['snippet']['snippets']
     wed = WordEventDispatcher.instance()
 
     if wed.word_event in list(snippets.keys()):

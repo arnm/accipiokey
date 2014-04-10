@@ -36,9 +36,6 @@ class AccipioKeyApp(App):
         self._ced = CorrectionEventDispatcher.instance()
         self._sed = ShortcutEventDistpacher.instance()
 
-        self._comped.shortcut = 'KEY_LEFTALT'
-        self._sed.shortcuts=[['KEY_LEFTALT']]
-
         # handlers
         self._ced.bind(correction_event=correction_event_handler)
         self._sed.bind(shortcut_event=shortcut_event_handler)
@@ -69,6 +66,7 @@ class AccipioKeyApp(App):
             return False
 
         self._user = users_response[0]
+        self._init_user()
         self._sm.current = self.HOME_SCREEN
         self._ked.poll_forever()
         return True
@@ -77,6 +75,20 @@ class AccipioKeyApp(App):
         if self.is_logged_in:
             self._user = None
         return True
+
+    # ToDo: load user settings
+    def _init_user(self):
+        if not self._user:
+            return
+
+        user_settings = settings.USER_SETTINGS[self._user.username]
+        completion_settings = user_settings['completion']
+        snippet_settings = user_settings['snippet']
+
+        self._comped.shortcut = completion_settings['shortcut']
+
+        self._sed.shortcuts.append(completion_settings['shortcut'])
+        self._sed.shortcuts.append(snippet_settings['shortcut'])
 
     def register(self, username, password):
         searcher = S(UserMappingType)

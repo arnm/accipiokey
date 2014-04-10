@@ -1,4 +1,4 @@
-from accipiokey.apputils import keycodeToUnicode, compare_lists
+from accipiokey.apputils import keycode_to_unicode
 from accipiokey.mappings import WordMappingType
 from datetime import datetime
 from elasticutils import S, get_es
@@ -120,7 +120,7 @@ class WordEventDispatcher(EventDispatcher):
         keystate = key_event.keystate
 
         if keystate == KeyEvent.key_down or keystate == KeyEvent.key_hold:
-            string = keycodeToUnicode(keycode)
+            string = keycode_to_unicode(keycode)
             if len(string) == 1:
                 self.word_buffer.append(string)
             elif string == 'space':
@@ -157,13 +157,13 @@ class ShortcutEventDistpacher(EventDispatcher):
         self._ksd = KeyboardStateEventDispatcher.instance()
         self._ksd.bind(keyboard_state=self.on_keyboard_state_change)
 
-        self.bind(shortcut_event= (lambda i, se:
-            logging.info('Shortcut Event: (%s)', se)))
+        self.bind(shortcut_event=lambda i, se:
+            logging.info('Shortcut Event: (%s)', se))
 
-    # ToDo: only works with one key shortcuts
     def on_keyboard_state_change(self, instance, keyboard_state):
-        if list(keyboard_state.keys()) in self.shortcuts:
-            self.shortcut_event = keyboard_state
+        for shortcut in self.shortcuts:
+            if sorted(keyboard_state.keys()) == sorted(shortcut):
+                self.shortcut_event = keyboard_state
 
 @ThreadSafeSingleton
 class CompletionEventDispatcher(EventDispatcher):
@@ -195,7 +195,7 @@ class CompletionEventDispatcher(EventDispatcher):
 
     def on_shortcut_event(self, instance, shortcut_event):
         # ToDo: make this work
-        if possible_completion_event:
+        if self.possible_completion_event:
             pass
 
     def on_word_event(self, instance, word_event):
@@ -227,7 +227,7 @@ class CorrectionEventDispatcher(EventDispatcher):
         self._wed = WordEventDispatcher.instance()
         self._wed.bind(last_word_event=self.on_last_word_event)
 
-        self.bind(correction_event= lambda i, ce:
+        self.bind(correction_event=lambda i, ce:
             logging.info('Correction Event: (%s)', ce))
 
     # ToDo: this should not be here

@@ -8,6 +8,7 @@ USER_SETTINGS = {}
 
 def load_user_settings():
     with open('settings.yaml', 'r') as settings_handle:
+        global USER_SETTINGS
         USER_SETTINGS = yaml.safe_load(settings_handle)
 
 

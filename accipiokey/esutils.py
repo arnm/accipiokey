@@ -27,6 +27,3 @@ def index_new_words(user_dict, words, normalize_func=lambda s: s.lower().rstrip(
         action = { '_parent': user_dict['_id'], 'text' : normalize_func(text)}
         actions.append(action)
     bulk(client=get_es(), actions=actions, index=WordMappingType.get_index(), doc_type=WordMappingType.get_mapping_type_name())
-
-def increase_word_boost(user_dict, word):
-    pass
