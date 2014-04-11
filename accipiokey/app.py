@@ -1,12 +1,11 @@
-from accipiokey import settings
-from accipiokey.modals import FileModal
 from accipiokey.apputils import *
-from accipiokey.widgets import *
 from accipiokey.dispatchers import *
+from accipiokey.documents import *
+from accipiokey.esutils import index_new_words
 from accipiokey.handlers import *
 from accipiokey.mappings import *
-from accipiokey.esutils import index_new_words
-
+from accipiokey.modals import FileModal
+from accipiokey.widgets import *
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.config import Config
@@ -14,11 +13,8 @@ from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.screenmanager import ScreenManager
-
-from elasticutils import S, get_es
-
-import mimetypes
-import os
+from mongoengine.errors import ValidationError
+import mimetypes, os, thread
 
 
 class AccipioKeyApp(App):
@@ -31,14 +27,14 @@ class AccipioKeyApp(App):
         self._sm = ScreenManager()
 
         # dispatchers
-        self._ked = KeyboardEventDispatcher.instance()
-        self._comped = CompletionEventDispatcher.instance()
+        self._cmed = CompletionEventDispatcher.instance()
         self._ced = CorrectionEventDispatcher.instance()
-        self._sed = ShortcutEventDistpacher.instance()
+        self._sed = SnippetEventDispatcher.instance()
 
         # handlers
-        self._ced.bind(correction_event=correction_event_handler)
-        self._sed.bind(shortcut_event=shortcut_event_handler)
+        self._cmed.bind(completion_event=self._handle_completion_event)
+        self._ced.bind(correction_event=self._handle_correction_event)
+        self._sed.bind(snippet_event=self._handle_snippet_event)
 
     @property
     def user(self):
@@ -60,54 +56,86 @@ class AccipioKeyApp(App):
             return False
 
         # check if user exists
-        searcher = S(UserMappingType)
-        users_response = searcher.query(username__term=username, password__term=password, must=True)
-        if not users_response.count():
+        users = User.objects(username=username, password=password)
+        if not users.count():
             return False
 
-        self._user = users_response[0]
-        self._init_user()
+        self._user = users[0]
+        KeyboardEventDispatcher.instance().poll_forever()
         self._sm.current = self.HOME_SCREEN
-        self._ked.poll_forever()
         return True
 
     def logout(self):
         if self.is_logged_in:
+            KeyboardEventDispatcher.instance().stop()
             self._user = None
         return True
 
-    # ToDo: load user settings
-    def _init_user(self):
-        if not self._user:
-            return
-
-        user_settings = settings.USER_SETTINGS[self._user.username]
-        completion_settings = user_settings['completion']
-        snippet_settings = user_settings['snippet']
-
-        self._comped.shortcut = completion_settings['shortcut']
-
-        self._sed.shortcuts.append(completion_settings['shortcut'])
-        self._sed.shortcuts.append(snippet_settings['shortcut'])
-
     def register(self, username, password):
-        searcher = S(UserMappingType)
-
-        # check if username is taken
-        users_response = searcher.query(username__term=username, must=True)
-        if users_response.count():
+        # check if user exists with that username
+        if User.objects(username=username).count():
             return False
 
-        user_dict = { 'username': username, 'password': password }
-        new_user_dict = get_es().index(
-            index=UserMappingType.get_index(),
-            doc_type=UserMappingType.get_mapping_type_name(),
-            body=user_dict)
+        # setup default user in DB
+        try:
+            user = User(
+                        username=username,
+                        password=password,
+                        shortcuts={
+                            'completion': ['KEY_LEFTALT', 'KEY_X'],
+                            'snippet': ['KEY_LEFTALT', 'KEY_Z']
+                        },
+                        snippets={'lol': 'laugh out loud'}
+                    ).save()
+        except ValidationError:
+            return False
 
+        # index default words for new user
         with open(settings.DEFAULT_CORPUS) as corpus:
-            index_new_words(new_user_dict, corpus.readlines())
+            thread.start_new_thread(
+                index_new_words,
+                (user, corpus.readlines()))
 
         return True
+
+    def _handle_completion_event(self, instance, completion_event):
+        KeyboardEventDispatcher.instance().stop()
+        KeyboardEventDispatcher.instance().poll_forever()
+
+    # TODO: synch up handling
+    def _handle_correction_event(self, instance, correction_event):
+        KeyboardEventDispatcher.instance().stop()
+
+        wordEventDispatcher = WordEventDispatcher.instance()
+        word_buffer = wordEventDispatcher.word_buffer
+        index = find_second_to_last(word_buffer, ' ')
+
+        if not index:
+            backspace_count = len(word_buffer)
+            emulate_key_events(['backspace' for i in range(backspace_count)])
+            key_events = list(correction_event)
+            key_events.append(' ')
+            print('Emulating: ', key_events)
+            emulate_key_events(key_events)
+            wordEventDispatcher.word_buffer = key_events
+        else:
+            backspace_count = len(word_buffer[index+1:])
+            emulate_key_events(['backspace' for i in range(backspace_count)])
+            key_events = list(correction_event)
+            key_events.append(' ')
+            print('Emulating: ', key_events)
+            emulate_key_events(key_events)
+            wordEventDispatcher.word_buffer=word_buffer[:backspace_count-1]
+            if not wordEventDispatcher.word_buffer[-1] == ' ':
+                wordEventDispatcher.word_buffer.append(' ')
+            [wordEventDispatcher.word_buffer.append(key_event)
+                for key_event in key_events]
+
+        KeyboardEventDispatcher.instance().poll_forever()
+
+    def _handle_snippet_event(self, instance, snippet_event):
+        KeyboardEventDispatcher.instance().stop()
+        KeyboardEventDispatcher.instance().poll_forever()
 
     def add_writing(self, path):
         if not self.is_logged_in:
@@ -139,7 +167,9 @@ class LoginScreen(Screen):
 
     def login(self):
         if not self._app.login(self.username, self.password):
-            showMessage('Login Failed', 'Invalid credentials, please try again.')
+            show_message(
+                'Login Failed',
+                'Invalid credentials, please try again.')
 
         self.ids.ti_username.text = ''
         self.ids.ti_password.text = ''
@@ -166,22 +196,26 @@ class RegisterScreen(Screen):
     def register(self):
         # check if username field is empty
         if not self.username:
-            showMessage("Empty Field", "Please enter in a username.")
+            show_message("Empty Field", "Please enter in a username.")
             return
 
         # check if either password field is empty
         if not self.password1 or not self.password2:
-            showMessage('Empty Field', 'Please enter matching passwords.')
+            show_message('Empty Field', 'Please enter matching passwords.')
             return
 
         # check if passwords don't match
         if not self.password1 == self.password2:
-            showMessage('Password Mismatch', 'Please enter matching passwords.')
+            show_message(
+                'Password Mismatch',
+                'Please enter matching passwords.')
             return
 
         # check if registration failed
         if not self._app.register(self.username, self.password1):
-            showMessage('Registration Failed', 'Please choose a different username.')
+            show_message(
+                'Registration Failed',
+                'Please choose a different username.')
             return
 
         self.finish()
@@ -196,7 +230,10 @@ class HomeScreen(Screen):
         self._file_modal.dismiss()
 
     def show_file_dialog(self):
-        self._file_modal = FileModal(title='Load Corpus',load=self.load, cancel=self.dismiss_file_modal)
+        self._file_modal = FileModal(
+                                title='Load Corpus',
+                                load=self.load,
+                                cancel=self.dismiss_file_modal)
         self._file_modal.open()
 
     def load(self, selections):
@@ -208,4 +245,4 @@ class HomeScreen(Screen):
                 invalid_selections.append(selection)
 
         if not selections:
-            showMessage('Invalid Corpora', str(invalid_selections))
+            show_message('Invalid Corpora', str(invalid_selections))

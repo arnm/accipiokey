@@ -27,9 +27,10 @@ def correction_event_handler(instance, correction_event):
         [instance.wordEventDispatcher.word_buffer.append(key_event)
             for key_event in key_events]
 
-# ToDo: update to work with updated ShotcutEvents
+# TODO: update to work with updated ShotcutEvents
 def shortcut_event_handler(instance, shortcut_event):
     from accipiokey import AccipioKeyApp
+
     app = AccipioKeyApp.get_running_app()
     snippets = settings.USER_SETTINGS[app.user.username]['snippet']['snippets']
     wed = WordEventDispatcher.instance()

@@ -12,7 +12,8 @@ def show_message(title, message, size=('300dp', '200dp')):
     def dismiss():
         modal.dismiss()
 
-    modal = MessageModal(title=title, size=size, size_hint=(None, None), message=message, cancel=dismiss)
+    modal = MessageModal(title=title, size=size, size_hint=(None, None),
+        message=message, cancel=dismiss)
     modal.open()
 
 # ToDo: fix this hack

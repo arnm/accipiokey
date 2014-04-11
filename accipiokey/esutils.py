@@ -11,19 +11,18 @@ def init_index():
         # create index
         es.indices.create(settings.INDEX)
 
-        # put mappings
         es.indices.put_mapping(
-            index=settings.INDEX, doc_type=UserMappingType.get_mapping_type_name(), body=UserMappingType.get_mapping())
-        es.indices.put_mapping(
-            index=settings.INDEX, doc_type=StatSheetMappingType.get_mapping_type_name(), body=StatSheetMappingType.get_mapping())
-        es.indices.put_mapping(
-            index=settings.INDEX, doc_type=WritingMappingType.get_mapping_type_name(), body=WritingMappingType.get_mapping())
-        es.indices.put_mapping(
-            index=settings.INDEX, doc_type=WordMappingType.get_mapping_type_name(), body=WordMappingType.get_mapping())
+            index=settings.INDEX,
+            doc_type=WordMappingType.get_mapping_type_name(),
+            body=WordMappingType.get_mapping())
 
-def index_new_words(user_dict, words, normalize_func=lambda s: s.lower().rstrip()):
+def index_new_words(user, words, normalize_func=lambda s: s.lower().rstrip()):
     actions = []
     for text in words:
-        action = { '_parent': user_dict['_id'], 'text' : normalize_func(text)}
+        action = { 'user': str(user.id), 'text' : normalize_func(text)}
         actions.append(action)
-    bulk(client=get_es(), actions=actions, index=WordMappingType.get_index(), doc_type=WordMappingType.get_mapping_type_name())
+    bulk(
+        client=get_es(),
+        actions=actions,
+        index=WordMappingType.get_index(),
+        doc_type=WordMappingType.get_mapping_type_name())
