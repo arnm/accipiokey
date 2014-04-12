@@ -66,8 +66,7 @@ class KeyboardStateEventDispatcher(EventDispatcher):
         self._ked.bind(key_event=self.on_key_event)
 
     def on_key_event(self, instance, key_event):
-        if not settings.HANDLE_EVENTS:
-            return
+        if not settings.HANDLE_EVENTS: return
 
         keycode = key_event.keycode
         keystate = key_event.keystate
@@ -83,9 +82,10 @@ class KeyboardStateEventDispatcher(EventDispatcher):
 @ThreadSafeSingleton
 class WordEventDispatcher(EventDispatcher):
 
-    last_word_event = StringProperty()
     word_event = StringProperty()
+    last_word_event = StringProperty()
     word_buffer = ListProperty()
+    indexed_word_event = StringProperty()
 
     def __init__(self, **kwargs):
         EventDispatcher.__init__(self, **kwargs)
@@ -102,9 +102,8 @@ class WordEventDispatcher(EventDispatcher):
                 'WordEventDispatcher: Last Word (%s) Word Event (%s)',
                 self.last_word_event, we))
 
+    # TODO: verify this is correct
     def on_word_buffer(self, instance, word_buffer):
-        if not settings.HANDLE_EVENTS:
-            return
 
         word_list = TextBlob(''.join(word_buffer)).words
 
@@ -135,8 +134,7 @@ class WordEventDispatcher(EventDispatcher):
             self.last_word_event = ''
 
     def on_key_event(self, instance, key_event):
-        if not settings.HANDLE_EVENTS:
-            return
+        if not settings.HANDLE_EVENTS: return
 
         keycode = key_event.keycode
         keystate = key_event.keystate
@@ -174,11 +172,10 @@ class ShortcutEventDispatcher(EventDispatcher):
         self._ksd.bind(keyboard_state=self.on_keyboard_state_change)
 
         self.bind(shortcut_event=lambda i, se:
-            Logger.info('ShortcutEventDispatcher: (%s)', se))
+            Logger.info('ShortcutEventDispatcher: Shortcut Event(%s)', se))
 
     def on_keyboard_state_change(self, instance, keyboard_state):
-        if not settings.HANDLE_EVENTS:
-            return
+        if not settings.HANDLE_EVENTS: return
 
         for name, shortcut in self._app.user.shortcuts.iteritems():
             if sorted(keyboard_state.keys()) == sorted(shortcut):
@@ -194,7 +191,7 @@ class CompletionEventDispatcher(EventDispatcher):
     def get_shortcut(cls):
         return 'completion'
 
-    def __init__(self, shortcut=None, **kwargs):
+    def __init__(self, **kwargs):
         EventDispatcher.__init__(self, **kwargs)
 
         from accipiokey import AccipioKeyApp
@@ -207,17 +204,13 @@ class CompletionEventDispatcher(EventDispatcher):
         self._wed.bind(word_event=self.on_word_event)
 
         self.bind(completion_event=lambda i, ce:
-            Logger.info('CompletionEventDispatcher: Completion Event (%s)', ce))
+            Logger.info(
+                'CompletionEventDispatcher: Completion Event (%s)', ce))
 
     def on_shortcut_event(self, instance, shortcut_event):
-        if not settings.HANDLE_EVENTS:
-            return
-
-        if not self.get_shortcut() in shortcut_event:
-            return
-
-        if not self.possible_completion_event:
-            return
+        if not settings.HANDLE_EVENTS: return
+        if not self.get_shortcut() in shortcut_event: return
+        if not self.possible_completion_event: return
 
         self.completion_event = self.possible_completion_event
 
@@ -257,28 +250,29 @@ class CorrectionEventDispatcher(EventDispatcher):
         self._wed.bind(last_word_event=self.on_last_word_event)
 
         self.bind(correction_event=lambda i, ce:
-            Logger.info('CorrectionEventDispatcher: Correction Event (%s)', ce))
+            Logger.info(
+                'CorrectionEventDispatcher: Correction Event (%s)', ce))
 
     def on_last_word_event(self, instance, last_word_event):
-        if not settings.HANDLE_EVENTS:
-            return
-
-        # check if last word in blank
-        if not str(last_word_event):
-            return
+        if not settings.HANDLE_EVENTS: return
+        # check if last word is blank
+        if not str(last_word_event): return
 
         searcher = S(WordMappingType)
+        # TODO: fix this to support multiple user support
         # check if word is already indexed
         word_search_result = searcher.query(
             user__term=str(self._app.user.id),
             text__term=str(last_word_event),
             must=True)
 
+        # if word is indexed there should only be one instance of that word
         if word_search_result.count():
-            for r in word_search_result:
-                Logger.info(
-                    'CorrectionEventDispatcher: Word Search Result (%s)',
-                    (r.text, r.user))
+            indexed_word_mapping = word_search_result[0]
+            self.indexed_word_event = indexed_word_mapping.text
+            Logger.info(
+                'CorrectionEventDispatcher: Word Indexed (%s)',
+                (indexed_word_mapping.text, indexed_word_mapping.user))
             return
 
         Logger.info(
@@ -321,13 +315,34 @@ class SnippetEventDispatcher(EventDispatcher):
         self.bind(snippet_event=lambda i, se:
             Logger.info('SnippetEventDispatcher: Snippet Event (%s)', se))
 
+    # TODO: currently only works with function key shortcuts (no combos)
     def on_shortcut_event(self, instance, shortcut_event):
-        if not settings.HANDLE_EVENTS:
-            return
+        if not settings.HANDLE_EVENTS: return
+
+        Logger.debug(
+            'SnippetEventDispatcher: Shortcut Event (%s)', shortcut_event)
 
         if not self.get_shortcut() in shortcut_event:
+            Logger.info(
+                'SnippetEventDispatcher: Shortcut Not Recognized (%s)',
+                shortcut_event)
             return
 
+        Logger.info(
+            'SnippetEventDispatcher: Shortcut Recognized (%s)',
+            shortcut_event)
+
+        # TODO: this is where the extra key gets tack on if its a letter
         snippet = str(WordEventDispatcher.instance().word_event)
-        if snippet in self._app.user.snippets:
-            self.snippet_event = {snippet: self._app.user.snippets[snippet]}
+
+        if not snippet in self._app.user.snippets:
+            Logger.info(
+                'SnippetEventDispatcher: Snippet Not Recognized (%s)',
+                snippet)
+            return
+
+        Logger.info(
+            'SnippetEventDispatcher: Processing (%s)',
+            (shortcut_event, snippet))
+
+        self.snippet_event = {snippet: self._app.user.snippets[snippet]}

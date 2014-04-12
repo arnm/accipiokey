@@ -16,7 +16,7 @@ from kivy.uix.screenmanager import ScreenManager
 from kivy.logger import Logger
 from textblob import TextBlob
 from mongoengine.errors import ValidationError
-import mimetypes, os, thread
+import mimetypes, os, threading
 
 
 class AccipioKeyApp(App):
@@ -28,15 +28,17 @@ class AccipioKeyApp(App):
         self._user = None
         self._sm = ScreenManager()
 
-        # dispatchers
-        self._cmed = CompletionEventDispatcher.instance()
-        self._ced = CorrectionEventDispatcher.instance()
-        self._sed = SnippetEventDispatcher.instance()
+        WordEventDispatcher.instance().bind(
+            indexed_word_event=self._on_indexed_word_event)
 
-        # handlers
-        self._cmed.bind(completion_event=self._handle_completion_event)
-        self._ced.bind(correction_event=self._handle_correction_event)
-        self._sed.bind(snippet_event=self._handle_snippet_event)
+        CompletionEventDispatcher.instance().bind(
+            completion_event=self._on_completion_event)
+
+        CorrectionEventDispatcher.instance().bind(
+            correction_event=self._on_correction_event)
+
+        SnippetEventDispatcher.instance().bind(
+            snippet_event=self._on_snippet_event)
 
     @property
     def user(self):
@@ -84,8 +86,8 @@ class AccipioKeyApp(App):
                         username=username,
                         password=password,
                         shortcuts={
-                            'completion': ['KEY_LEFTALT', 'KEY_X'],
-                            'snippet': ['KEY_LEFTALT', 'KEY_Z']
+                            'completion': ['KEY_LEFTALT'],
+                            'snippet': ['KEY_RIGHTALT']
                         },
                         snippets={'lol': 'laugh out loud'}
                     ).save()
@@ -94,17 +96,24 @@ class AccipioKeyApp(App):
 
         # index default words for new user
         with open(settings.DEFAULT_CORPUS) as corpus:
-            thread.start_new_thread(
-                index_new_words,
-                (user, corpus.readlines()))
-
+            thread = threading.Thread(
+                target=index_new_words,
+                args=(user, corpus.readlines(),))
+            thread.daemon = True
+            thread.start()
         return True
 
-    def _handle_completion_event(self, instance, completion_event):
+    # TODO: boost each indexed word
+    def _on_indexed_word_event(self, instance, indexed_word_event):
+        pass
+
+    # TODO: implement method
+    def _on_completion_event(self, instance, completion_event):
         KeyboardEventDispatcher.instance().stop()
         KeyboardEventDispatcher.instance().poll_forever()
 
-    def _handle_correction_event(self, instance, correction_event):
+    # TODO: incorporate user analytics
+    def _on_correction_event(self, instance, correction_event):
         KeyboardEventDispatcher.instance().stop()
 
         wed = WordEventDispatcher.instance()
@@ -137,9 +146,6 @@ class AccipioKeyApp(App):
         # simulate corrected word keys in external app
         emulate_key_events([character for character in correction])
 
-        wed.word_event = ''
-        wed.last_word_event = correction_event
-
         Logger.debug(
             'CorrectionEventHandler: Corrected Word Buffer(%s)',
             wed.word_buffer)
@@ -151,8 +157,48 @@ class AccipioKeyApp(App):
 
         KeyboardEventDispatcher.instance().poll_forever()
 
-    def _handle_snippet_event(self, instance, snippet_event):
+    def _on_snippet_event(self, instance, snippet_event):
         KeyboardEventDispatcher.instance().stop()
+
+        wed = WordEventDispatcher.instance()
+
+        Logger.debug(
+            'SnippetEventHandler: Original Word Buffer(%s)',
+            wed.word_buffer)
+
+        num_deletions = len(wed.word_event)
+
+        Logger.debug(
+            'SnippetEventHandler: Deletions To Be Made (%d)',
+            num_deletions)
+
+        # remove incorrect word from buffer
+        for _ in range(num_deletions): del wed.word_buffer[-1]
+        # delete external app word
+        emulate_key_events(['backspace' for _ in range(num_deletions)])
+
+        # add space to corrected word b/c this is invoked after new words
+        correction = snippet_event.itervalues().next()
+
+        Logger.info(
+            'SnippetEventHandler: Correction To Be Made (%s)',
+            list(correction))
+
+        # append new word to word buffer
+        for character in correction: wed.word_buffer.append(character)
+
+        # simulate corrected word keys in external app
+        emulate_key_events([character for character in correction])
+
+        Logger.debug(
+            'SnippetEventHandler: Corrected Word Buffer(%s)',
+            wed.word_buffer)
+
+        Logger.info(
+            'SnippetEventHandler: Last Word (%s) Current Word (%s)',
+            wed.last_word_event,
+            wed.word_event)
+
         KeyboardEventDispatcher.instance().poll_forever()
 
     def add_writing(self, path):
