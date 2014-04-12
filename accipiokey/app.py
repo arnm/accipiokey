@@ -13,6 +13,8 @@ from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.screenmanager import ScreenManager
+from kivy.logger import Logger
+from textblob import TextBlob
 from mongoengine.errors import ValidationError
 import mimetypes, os, thread
 
@@ -102,34 +104,50 @@ class AccipioKeyApp(App):
         KeyboardEventDispatcher.instance().stop()
         KeyboardEventDispatcher.instance().poll_forever()
 
-    # TODO: synch up handling
     def _handle_correction_event(self, instance, correction_event):
         KeyboardEventDispatcher.instance().stop()
 
-        wordEventDispatcher = WordEventDispatcher.instance()
-        word_buffer = wordEventDispatcher.word_buffer
-        index = find_second_to_last(word_buffer, ' ')
+        wed = WordEventDispatcher.instance()
 
-        if not index:
-            backspace_count = len(word_buffer)
-            emulate_key_events(['backspace' for i in range(backspace_count)])
-            key_events = list(correction_event)
-            key_events.append(' ')
-            print('Emulating: ', key_events)
-            emulate_key_events(key_events)
-            wordEventDispatcher.word_buffer = key_events
-        else:
-            backspace_count = len(word_buffer[index+1:])
-            emulate_key_events(['backspace' for i in range(backspace_count)])
-            key_events = list(correction_event)
-            key_events.append(' ')
-            print('Emulating: ', key_events)
-            emulate_key_events(key_events)
-            wordEventDispatcher.word_buffer=word_buffer[:backspace_count-1]
-            if not wordEventDispatcher.word_buffer[-1] == ' ':
-                wordEventDispatcher.word_buffer.append(' ')
-            [wordEventDispatcher.word_buffer.append(key_event)
-                for key_event in key_events]
+        Logger.debug(
+            'CorrectionEventHandler: Original Word Buffer(%s)',
+            wed.word_buffer)
+
+        num_deletions = len(wed.last_word_event) + 1
+
+        Logger.debug(
+            'CorrectionEventHandler: Deletions To Be Made (%d)',
+            num_deletions)
+
+        # remove incorrect word from buffer
+        for _ in range(num_deletions): del wed.word_buffer[-1]
+        # delete external app word
+        emulate_key_events(['backspace' for _ in range(num_deletions)])
+
+        # add space to corrected word b/c this is invoked after new words
+        correction = correction_event + ' '
+
+        Logger.info(
+            'CorrectionEventHandler: Correction To Be Made (%s)',
+            list(correction))
+
+        # append new word to word buffer
+        for character in correction: wed.word_buffer.append(character)
+
+        # simulate corrected word keys in external app
+        emulate_key_events([character for character in correction])
+
+        wed.word_event = ''
+        wed.last_word_event = correction_event
+
+        Logger.debug(
+            'CorrectionEventHandler: Corrected Word Buffer(%s)',
+            wed.word_buffer)
+
+        Logger.info(
+            'CorrectionEventHandler: Last Word (%s) Current Word (%s)',
+            wed.last_word_event,
+            wed.word_event)
 
         KeyboardEventDispatcher.instance().poll_forever()
 
