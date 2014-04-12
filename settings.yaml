@@ -1,6 +1,0 @@
-anunez:
-    snippet:
-        shortcut: ['KEY_RIGHTALT']
-        snippets: {'lol': 'laugh out loud', 'brb': 'be right back'}
-    completion:
-        shortcut: ['KEY_LEFTALT', 'KEY_X']

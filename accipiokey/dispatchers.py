@@ -14,7 +14,6 @@ from threading import Thread
 from time import clock, sleep
 
 
-
 # TODO: this is probably completely wrong but it kinda works
 @ThreadSafeSingleton
 class KeyboardEventDispatcher(EventDispatcher):
@@ -31,7 +30,7 @@ class KeyboardEventDispatcher(EventDispatcher):
     def running(self):
         return self._running
 
-    def poll(self, dt=0):
+    def poll(self):
         r, w, x = select([self._dev], [], [])
         for event in self._dev.read():
             if event.type == ecodes.EV_KEY:

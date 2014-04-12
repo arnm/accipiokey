@@ -9,13 +9,13 @@ from accipiokey.widgets import *
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.config import Config
+from kivy.logger import Logger
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
 from kivy.uix.screenmanager import Screen
 from kivy.uix.screenmanager import ScreenManager
-from kivy.logger import Logger
-from textblob import TextBlob
 from mongoengine.errors import ValidationError
+from textblob import TextBlob
 import mimetypes, os, threading
 
 
@@ -25,9 +25,11 @@ class AccipioKeyApp(App):
 
     def __init__(self, **kwargs):
         super(AccipioKeyApp, self).__init__(**kwargs)
+
         self._user = None
         self._sm = ScreenManager()
 
+        # setup event handlers
         WordEventDispatcher.instance().bind(
             indexed_word_event=self._on_indexed_word_event)
 
@@ -48,6 +50,7 @@ class AccipioKeyApp(App):
     def is_logged_in(self):
         return True if self._user else False
 
+    # TODO: this could be more general
     def build(self):
         self._sm.add_widget(LoginScreen(name=self.LOGIN_SCREEN))
         self._sm.add_widget(RegisterScreen(name=self.REGISTER_SCREEN))
@@ -73,7 +76,6 @@ class AccipioKeyApp(App):
         if self.is_logged_in:
             KeyboardEventDispatcher.instance().stop()
             self._user = None
-        return True
 
     def register(self, username, password):
         # check if user exists with that username
@@ -83,14 +85,13 @@ class AccipioKeyApp(App):
         # setup default user in DB
         try:
             user = User(
-                        username=username,
-                        password=password,
-                        shortcuts={
-                            'completion': ['KEY_LEFTALT'],
-                            'snippet': ['KEY_RIGHTALT']
-                        },
-                        snippets={'lol': 'laugh out loud'}
-                    ).save()
+                username=username,
+                password=password,
+                shortcuts={
+                    'completion': ['KEY_LEFTALT'],
+                    'snippet': ['KEY_RIGHTALT']
+                },
+                snippets={'lol': 'laugh out loud'}).save()
         except ValidationError:
             return False
 
@@ -157,6 +158,7 @@ class AccipioKeyApp(App):
 
         KeyboardEventDispatcher.instance().poll_forever()
 
+    # TODO: incorporate analytics
     def _on_snippet_event(self, instance, snippet_event):
         KeyboardEventDispatcher.instance().stop()
 
@@ -295,9 +297,9 @@ class HomeScreen(Screen):
 
     def show_file_dialog(self):
         self._file_modal = FileModal(
-                                title='Load Corpus',
-                                load=self.load,
-                                cancel=self.dismiss_file_modal)
+            title='Load Corpus',
+            load=self.load,
+            cancel=self.dismiss_file_modal)
         self._file_modal.open()
 
     def load(self, selections):
