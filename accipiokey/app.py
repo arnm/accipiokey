@@ -111,6 +111,33 @@ class AccipioKeyApp(App):
     # TODO: implement method
     def _on_completion_event(self, instance, completion_event):
         KeyboardEventDispatcher.instance().stop()
+
+        wed = WordEventDispatcher.instance()
+
+        Logger.debug(
+            'CompletionEventHandler: Original Word Buffer(%s)',
+            wed.word_buffer)
+
+        # get remaining string of completion
+        postfix = completion_event[len(wed.word_event):]
+
+        Logger.debug('CompletionEventHandler: Postfix (%s)', postfix)
+
+        # append postfix to word buffer
+        for character in postfix: wed.word_buffer.append(character)
+
+        # simulate postfix keys in external app
+        emulate_key_events([character for character in postfix])
+
+        Logger.debug(
+            'CorrectionEventHandler: Corrected Word Buffer(%s)',
+            wed.word_buffer)
+
+        Logger.info(
+            'CorrectionEventHandler: Last Word (%s) Current Word (%s)',
+            wed.last_word_event,
+            wed.word_event)
+
         KeyboardEventDispatcher.instance().poll_forever()
 
     # TODO: incorporate user analytics
@@ -204,11 +231,8 @@ class AccipioKeyApp(App):
         KeyboardEventDispatcher.instance().poll_forever()
 
     def add_writing(self, path):
-        if not self.is_logged_in:
-            return False
-
-        if not mimetypes.guess_type(path)[0] == 'text/plain':
-            return False
+        if not self.is_logged_in: return False
+        if not mimetypes.guess_type(path)[0] == 'text/plain': return False
 
         with open(path, 'r') as f:
             title = os.path.splitext(os.path.basename(path))

@@ -14,6 +14,7 @@ from threading import Thread
 from time import clock, sleep
 
 
+# TODO: For properties to dispatch events they must be assigned new values
 # TODO: this is probably completely wrong but it kinda works
 @ThreadSafeSingleton
 class KeyboardEventDispatcher(EventDispatcher):
@@ -156,12 +157,13 @@ class WordEventDispatcher(EventDispatcher):
                     self._backspace_pressed = True
                     del self.word_buffer[-1]
 
+# TODO: review this
 @ThreadSafeSingleton
 class ShortcutEventDispatcher(EventDispatcher):
 
     shortcut_event = DictProperty()
 
-    def __init__(self, shortcuts=[], **kwargs):
+    def __init__(self, **kwargs):
         EventDispatcher.__init__(self, **kwargs)
 
         from accipiokey import AccipioKeyApp
@@ -177,8 +179,9 @@ class ShortcutEventDispatcher(EventDispatcher):
         if not settings.HANDLE_EVENTS: return
 
         for name, shortcut in self._app.user.shortcuts.iteritems():
-            if sorted(keyboard_state.keys()) == sorted(shortcut):
+            if keyboard_state.keys() == shortcut:
                 self.shortcut_event = {name: shortcut}
+                break
 
 @ThreadSafeSingleton
 class CompletionEventDispatcher(EventDispatcher):
@@ -208,14 +211,26 @@ class CompletionEventDispatcher(EventDispatcher):
 
     def on_shortcut_event(self, instance, shortcut_event):
         if not settings.HANDLE_EVENTS: return
-        if not self.get_shortcut() in shortcut_event: return
-        if not self.possible_completion_event: return
+        if not self.get_shortcut() in shortcut_event:
+            Logger.debug(
+                'CompletionEventDispatcher: Shortcut Not Recognized (%s)',
+                shortcut_event)
+            return
+
+        Logger.debug(
+            'CompletionEventDispatcher: Shortcut Recognized (%s)',
+            shortcut_event)
+
+        if not self.possible_completion_event:
+            Logger.debug(
+                'CompletionEventDispatcher: No Completion Found (%s)',
+                self._wed.word_event)
+            return
 
         self.completion_event = self.possible_completion_event
 
     def on_word_event(self, instance, word_event):
-        if not settings.HANDLE_EVENTS:
-            return
+        if not settings.HANDLE_EVENTS: return
 
         suggestion_name = 'completion_suggestion'
         compl_resp = get_es().suggest(index=WordMappingType.get_index(),
@@ -286,8 +301,7 @@ class CorrectionEventDispatcher(EventDispatcher):
             field='text')
         suggestions = suggest_query.suggestions()[suggestion_name][0]['options']
 
-        if not suggestions:
-            return
+        if not suggestions: return
 
         # correct last word if necessary
         top_suggestion = suggestions[0]['text']
@@ -318,9 +332,6 @@ class SnippetEventDispatcher(EventDispatcher):
     def on_shortcut_event(self, instance, shortcut_event):
         if not settings.HANDLE_EVENTS: return
 
-        Logger.debug(
-            'SnippetEventDispatcher: Shortcut Event (%s)', shortcut_event)
-
         if not self.get_shortcut() in shortcut_event:
             Logger.info(
                 'SnippetEventDispatcher: Shortcut Not Recognized (%s)',
@@ -339,9 +350,5 @@ class SnippetEventDispatcher(EventDispatcher):
                 'SnippetEventDispatcher: Snippet Not Recognized (%s)',
                 snippet)
             return
-
-        Logger.info(
-            'SnippetEventDispatcher: Processing (%s)',
-            (shortcut_event, snippet))
 
         self.snippet_event = {snippet: self._app.user.snippets[snippet]}

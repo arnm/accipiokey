@@ -13,3 +13,4 @@ requests==2.2.1
 singleton==0.1.0
 textblob==0.8.4
 urllib3==1.7.1
+wsgiref==0.1.2

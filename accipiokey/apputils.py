@@ -17,8 +17,7 @@ def show_message(title, message, size=('300dp', '200dp')):
     modal.open()
 
 # TODO: fix this hack
-def keycode_to_unicode(keycode):
-    return keycode.replace('KEY_', '').lower()
+def keycode_to_unicode(keycode): return keycode.replace('KEY_', '').lower()
 
 # TODO: fix this hack
 def unicode_to_keycode(unicode):
