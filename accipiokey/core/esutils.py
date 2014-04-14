@@ -1,5 +1,5 @@
-from accipiokey import settings
-from accipiokey.mappings import *
+from accipiokey.core import settings
+from accipiokey.core.mappings import *
 
 from elasticutils import get_es
 from elasticsearch.helpers import bulk

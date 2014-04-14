@@ -1,20 +1,3 @@
-from accipiokey.modals import MessageModal
-
-from kivy.uix.popup import Popup
-from kivy.uix.label import Label
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.button import Button
-
-from evdev import ecodes, UInput
-
-def show_message(title, message, size=('300dp', '200dp')):
-
-    def dismiss():
-        modal.dismiss()
-
-    modal = MessageModal(title=title, size=size, size_hint=(None, None),
-        message=message, cancel=dismiss)
-    modal.open()
 
 # TODO: fix this hack
 def keycode_to_unicode(keycode): return keycode.replace('KEY_', '').lower()

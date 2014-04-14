@@ -1,6 +1,6 @@
-from accipiokey.app import AccipioKeyApp
-from accipiokey import settings
-from accipiokey.esutils import init_index
+from accipiokey.core.app import AccipioKeyAppController, AccipioKeyApp
+from accipiokey.core import settings
+from accipiokey.core.esutils import init_index
 from mongoengine import connect
 
 connect(settings.DB)

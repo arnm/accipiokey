@@ -1,5 +1,7 @@
-from accipiokey import AccipioKeyApp
+from accipiokey import AccipioKeyAppController
+import sys
 
 
 if __name__ == '__main__':
-    AccipioKeyApp().run()
+    app = AccipioKeyAppController(sys.argv)
+    sys.exit(app.exec_())

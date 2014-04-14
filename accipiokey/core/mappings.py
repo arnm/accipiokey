@@ -1,4 +1,4 @@
-from accipiokey import settings
+from accipiokey.core import settings
 from elasticutils import MappingType
 
 class WordMappingType(MappingType):

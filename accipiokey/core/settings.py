@@ -1,5 +1,3 @@
-import yaml
-
 URLS = ['localhost']
 INDEX = 'accipiokey'
 DB = 'accipiokey'
