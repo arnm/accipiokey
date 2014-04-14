@@ -14,6 +14,7 @@ class StatSheet(Document):
     words_completed = IntField(min_value=0)
     keystrokes_saved = IntField(min_value=0)
 
+# TODO: this might be incorrect
 class Writing(Document):
     user = ReferenceField(User, reverse_delete_rule=CASCADE)
     title = StringField(required=True, max_length=120)

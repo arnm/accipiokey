@@ -3,6 +3,7 @@ from accipiokey.core.documents import *
 from accipiokey.core.emitters import *
 from accipiokey.gui.windows import *
 from mongoengine.errors import ValidationError
+from PySide.QtCore import Slot
 from PySide.QtGui import QApplication
 from singleton.singleton import ThreadSafeSingleton
 from textblob import TextBlob
@@ -26,10 +27,9 @@ class AccipioKeyApp(QObject):
         self._user = None
 
         # Handle Emitters
-        WordSignalEmitter.instance()
-        ShortcutSignalEmitter.instance().app = self
+        WordSignalEmitter.instance().indexed_word_signal.connect(
+            self._on_indexed_word_signal)
 
-        CorrectionSignalEmitter.instance().app = self
         CorrectionSignalEmitter.instance().correction_signal.connect(
             self._on_correction_signal)
 
@@ -37,9 +37,14 @@ class AccipioKeyApp(QObject):
         CompletionSignalEmitter.instance().completion_signal.connect(
             self._on_completion_signal)
 
-        SnippetSignalEmitter.instance().app = self
         SnippetSignalEmitter.instance().snippet_signal.connect(
             self._on_snippet_signal)
+
+    def _init_emitters(self):
+        WordSignalEmitter.instance().user = self.user
+        ShortcutSignalEmitter.instance().user = self.user
+        CorrectionSignalEmitter.instance().user = self.user
+        SnippetSignalEmitter.instance().user = self.user
 
     def register(self, username, password):
         # check if user exists with that username
@@ -71,21 +76,54 @@ class AccipioKeyApp(QObject):
     def login(self, username, password):
         # check if someone is already logged in
         if self.is_logged_in:
+            Logger.debug(
+                'AccipioKeyApp: Already Logged In (%s)', self.user.username)
             return False
 
         # check if user exists
         users = User.objects(username=username, password=password)
         if not users.count():
+            Logger.debug('AccipioKeyApp: User Not Registered (%s)', username)
             return False
 
         self._user = users[0]
-        KeySignalEmitter.instance().poll_forever()
+        Logger.debug('AccipioKeyApp: Logging In (%s)', self.user.username)
         return True
 
+    def start(self):
+        if not self.is_logged_in:
+            Logger.debug('AccipioKeyApp: Not Logged In')
+            return
+
+        if KeySignalEmitter.instance().running:
+            Logger.debug('AccipioKeyApp: Already Running')
+            return
+
+        Logger.debug('AccipioKeyApp: Starting')
+        self._init_emitters()
+        KeySignalEmitter.instance().poll_forever()
+
+    # TODO: this doesn't really stop recording of keys
+    def stop(self):
+        if not self.is_logged_in:
+            Logger.debug('AccipioKeyApp: Not Logged In')
+            return
+
+        if not KeySignalEmitter.instance().running:
+            Logger.debug('AccipioKeyApp: Already Stopped')
+            return
+
+        Logger.debug('AccipioKeyApp: Stopping')
+        KeySignalEmitter.instance().stop()
+
     def logout(self):
-        if self.is_logged_in:
-            KeySignalEmitter.instance().stop()
-            self._user = None
+        if not self.is_logged_in:
+            Logger.debug('AccipioKeyApp: Not Logged In')
+            return
+
+        Logger.debug('AccipioKeyApp: Logging Out (%s)', self.user.username)
+        KeySignalEmitter.instance().stop()
+        self._user = None
 
     def add_writing(self, path):
         if not self.is_logged_in: return False
@@ -99,18 +137,25 @@ class AccipioKeyApp(QObject):
             self._process_writing(writing)
         return True
 
+    # TODO: implement
     def _process_writing(self, writing):
         pass
 
+    # TODO: implement
+    @Slot(str)
+    def _on_indexed_word_signal(self, indexed_word_signal):
+        Logger.debug('IndexedWordSignalHandler: (%s)', indexed_word_signal)
+
     # TODO: incorporate user analytics
+    @Slot(str)
     def _on_correction_signal(self, correction_signal):
         KeySignalEmitter.instance().stop()
 
         wed = WordSignalEmitter.instance()
 
-        Logger.debug(
-            'CorrectionSEmitter: Original Word Buffer(%s)',
-            wed.word_buffer)
+        # Logger.debug(
+        #     'CorrectionSEmitter: Original Word Buffer(%s)',
+        #     wed.word_buffer)
 
         num_deletions = len(wed.last_word) + 1
 
@@ -136,9 +181,9 @@ class AccipioKeyApp(QObject):
         # simulate corrected word keys in external app
         emulate_key_events([character for character in correction])
 
-        Logger.debug(
-            'CorrectionSEmitter: Corrected Word Buffer(%s)',
-            wed.word_buffer)
+        # Logger.debug(
+        #     'CorrectionSEmitter: Corrected Word Buffer(%s)',
+        #     wed.word_buffer)
 
         Logger.info(
             'CorrectionSEmitter: Last Word (%s) Current Word (%s)',
@@ -147,14 +192,15 @@ class AccipioKeyApp(QObject):
 
         KeySignalEmitter.instance().poll_forever()
 
+    @Slot(str)
     def _on_completion_signal(self, completion_signal):
         KeySignalEmitter.instance().stop()
 
         wed = WordSignalEmitter.instance()
 
-        Logger.debug(
-            'CompletionSignalHandler: Original Word Buffer(%s)',
-            wed.word_buffer)
+        # Logger.debug(
+        #     'CompletionSignalHandler: Original Word Buffer(%s)',
+        #     wed.word_buffer)
 
         # get remaining string of completion
         postfix = completion_signal[len(wed.current_word):]
@@ -167,9 +213,9 @@ class AccipioKeyApp(QObject):
         # simulate postfix keys in external app
         emulate_key_events([character for character in postfix])
 
-        Logger.debug(
-            'CompletionSignalHandler: Corrected Word Buffer(%s)',
-            wed.word_buffer)
+        # Logger.debug(
+        #     'CompletionSignalHandler: Corrected Word Buffer(%s)',
+        #     wed.word_buffer)
 
         Logger.info(
             'CompletionSignalHandler: Last Word (%s) Current Word (%s)',
@@ -179,14 +225,15 @@ class AccipioKeyApp(QObject):
         KeySignalEmitter.instance().poll_forever()
 
     # TODO: incorporate analytics
+    @Slot(dict)
     def _on_snippet_signal(self, snippet_signal):
         KeySignalEmitter.instance().stop()
 
         wed = WordSignalEmitter.instance()
 
-        Logger.debug(
-            'SnippetSignalHandler: Original Word Buffer(%s)',
-            wed.word_buffer)
+        # Logger.debug(
+        #     'SnippetSignalHandler: Original Word Buffer(%s)',
+        #     wed.word_buffer)
 
         num_deletions = len(wed.current_word)
 
@@ -212,9 +259,9 @@ class AccipioKeyApp(QObject):
         # simulate corrected word keys in external app
         emulate_key_events([character for character in correction])
 
-        Logger.debug(
-            'SnippetSignalHandler: Corrected Word Buffer(%s)',
-            wed.word_buffer)
+        # Logger.debug(
+        #     'SnippetSignalHandler: Corrected Word Buffer(%s)',
+        #     wed.word_buffer)
 
         Logger.info(
             'SnippetSignalHandler: Last Word (%s) Current Word (%s)',
@@ -229,12 +276,24 @@ class AccipioKeyAppController(QApplication):
         super(AccipioKeyAppController, self).__init__(argv)
         self._app = AccipioKeyApp.instance()
 
+        self._user_window = UserWindow()
+        self._user_window.ui.actionStart.triggered.connect(self._on_app_start)
+        self._user_window.ui.actionStop.triggered.connect(self._on_app_stop)
+        self._user_window.ui.actionLogout.triggered.connect(self._on_app_logout)
+
+    def exec_(self):
+        self._run()
+        super(AccipioKeyAppController, self).exec_()
+
     def _run(self):
         login_window = LoginWindow()
 
         @Slot(dict)
         def on_login_signal(credentials):
-            self._app.login(credentials['username'], credentials['password'])
+            if self._app.login(credentials['username'],credentials['password']):
+                login_window.close()
+                self._user_window.setWindowTitle(self._app.user.username)
+                self._user_window.show()
 
         @Slot()
         def on_register_signal():
@@ -242,7 +301,8 @@ class AccipioKeyAppController(QApplication):
 
             @Slot(dict)
             def on_register_signal(credentials):
-                if self._app.register(credentials['username'], credentials['password']):
+                if self._app.register(
+                    credentials['username'], credentials['password']):
                     register_window.close()
 
             @Slot()
@@ -256,6 +316,13 @@ class AccipioKeyAppController(QApplication):
         login_window.register_signal.connect(on_register_signal)
         login_window.show()
 
-    def exec_(self):
+    def _on_app_start(self):
+        self._app.start()
+
+    def _on_app_stop(self):
+        self._app.stop()
+
+    def _on_app_logout(self):
+        self._app.logout()
+        self._user_window.close()
         self._run()
-        super(AccipioKeyAppController, self).exec_()

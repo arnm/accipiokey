@@ -1,5 +1,6 @@
 from accipiokey.gui.ui.Ui_LoginWindow import Ui_LoginWindow
 from accipiokey.gui.ui.Ui_RegisterWindow import Ui_RegisterWindow
+from accipiokey.gui.ui.Ui_UserWindow import Ui_UserWindow
 from PySide.QtCore import *
 from PySide.QtGui import *
 
@@ -74,3 +75,11 @@ class RegisterWindow(QMainWindow):
 
     def _on_cancel_btn_click(self):
         self.cancel_signal.emit()
+
+class UserWindow(QMainWindow):
+
+    def __init__(self, parent=None):
+        super(UserWindow, self).__init__(parent)
+
+        self.ui = Ui_UserWindow()
+        self.ui.setupUi(self)
