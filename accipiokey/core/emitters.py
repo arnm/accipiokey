@@ -90,14 +90,9 @@ class WordSignalEmitter(QObject):
     word_buffer_signal = Signal(list)
     indexed_word_signal = Signal(str)
 
-    @property
-    def current_word(self): return self._current_word
-
-    @property
-    def last_word(self): return self._last_word
-
-    @property
-    def word_buffer(self): return self._word_buffer
+    current_word = ''
+    last_word = ''
+    word_buffer = []
 
     def __init__(self, **kwargs):
         QObject.__init__(self, **kwargs)
@@ -105,53 +100,50 @@ class WordSignalEmitter(QObject):
         self._word_delimiter_pressed = False
         self._backspace_pressed = False
 
-        self._current_word = ''
-        self._last_word = ''
-        self._word_buffer = []
-
         KeySignalEmitter.instance().key_signal.connect(self.on_key_signal)
-        self.word_buffer_signal.connect(self.on_word_buffer_signal)
+        self.word_buffer_signal.connect(self.onword_buffer_signal)
 
         self.current_word_signal.connect(lambda cws:
             Logger.info(
                 'WordSignalEmitter: Last Word (%s) Word Event (%s)',
-                self._last_word, cws))
+                self.last_word, cws))
 
     # TODO: verify this is correct
-    def on_word_buffer_signal(self, word_buffer):
+    def onword_buffer_signal(self, word_buffer):
 
         word_list = TextBlob(''.join(word_buffer)).words
 
         # check words have been typed
         if word_list:
             # if backspace was pressed and last key typed was whitespace
-            if self._backspace_pressed and not self._word_buffer[-1].strip():
-                self._last_word = word_list[-1]
-                self._current_word = ''
+            if self._backspace_pressed and not self.word_buffer[-1].strip():
+                self.last_word = word_list[-1]
+                self.current_word = ''
                 self._backspace_pressed = False
 
-                self.last_word_signal.emit(self._last_word)
-                self.current_word_signal.emit(self._current_word)
+                self.last_word_signal.emit(self.last_word)
+                self.current_word_signal.emit(self.current_word)
                 return
 
             if self._word_delimiter_pressed:
-                self._last_word = word_list[-1]
-                self._current_word = ''
+                self.last_word = word_list[-1]
+                self.current_word = ''
                 self._word_delimiter_pressed = False
 
-                self.last_word_signal.emit(self._last_word)
-                self.current_word_signal.emit(self._current_word)
+                self.last_word_signal.emit(self.last_word)
+                self.current_word_signal.emit(self.current_word)
                 return
 
-            if len(word_list) >= 2: self._last_word = word_list[-2]
-            elif self._last_word: self._last_word = ''
-            self._current_word = word_list[-1]
+            if len(word_list) >= 2:
+                self.last_word = word_list[-2]
+                self.last_word_signal.emit(self.last_word)
+            elif self.last_word:
+                self.last_word = ''
+            self.current_word = word_list[-1]
 
-            self.last_word_signal.emit(self._last_word)
-            self.current_word_signal.emit(self._current_word)
+            self.current_word_signal.emit(self.current_word)
         else:
-            self._last_word = ''
-            self.last_word_signal.emit(self._last_word)
+            self.last_word = ''
 
     def on_key_signal(self, key_signal):
 
@@ -161,25 +153,25 @@ class WordSignalEmitter(QObject):
         if keystate == KeyEvent.key_down or keystate == KeyEvent.key_hold:
             string = keycode_to_unicode(keycode)
             if len(string) == 1:
-                self._word_buffer.append(string)
-                self.word_buffer_signal.emit(self._word_buffer)
+                self.word_buffer.append(string)
+                self.word_buffer_signal.emit(self.word_buffer)
             elif string == 'space':
                 self._word_delimiter_pressed = True
-                self._word_buffer.append(' ')
-                self.word_buffer_signal.emit(self._word_buffer)
+                self.word_buffer.append(' ')
+                self.word_buffer_signal.emit(self.word_buffer)
             elif string == 'enter':
                 self._word_delimiter_pressed = True
-                self._word_buffer.append(' ')
-                self.word_buffer_signal.emit(self._word_buffer)
+                self.word_buffer.append(' ')
+                self.word_buffer_signal.emit(self.word_buffer)
             elif string == 'tab':
                 self._word_delimiter_pressed = True
-                self._word_buffer.append(' ')
-                self.word_buffer_signal.emit(self._word_buffer)
+                self.word_buffer.append(' ')
+                self.word_buffer_signal.emit(self.word_buffer)
             elif string == 'backspace':
-                if self._word_buffer:
+                if self.word_buffer:
                     self._backspace_pressed = True
-                    del self._word_buffer[-1]
-                    self.word_buffer_signal.emit(self._word_buffer)
+                    del self.word_buffer[-1]
+                    self.word_buffer_signal.emit(self.word_buffer)
 
 # TODO: review this
 @ThreadSafeSingleton
@@ -221,7 +213,7 @@ class CompletionSignalEmitter(QObject):
         ShortcutSignalEmitter.instance().shortcut_signal.connect(
             self.on_shortcut_signal)
         WordSignalEmitter.instance().current_word_signal.connect(
-            self.on_current_word_signal)
+            self.oncurrent_word_signal)
 
         self.completion_signal.connect(lambda cs:
             Logger.info(
@@ -246,7 +238,7 @@ class CompletionSignalEmitter(QObject):
 
         self.completion_signal.emit(self._possible_completion)
 
-    def on_current_word_signal(self, word_signal):
+    def oncurrent_word_signal(self, word_signal):
         suggestion_name = 'completion_suggestion'
         compl_resp = get_es().suggest(index=WordMappingType.get_index(),
             body={
@@ -297,7 +289,7 @@ class CorrectionSignalEmitter(QObject):
             indexed_word_mapping = word_search_result[0]
             self.indexed_word_event = indexed_word_mapping.text
             Logger.info(
-                'CorrectionSignalEmitter: Word Indexed (%s)',
+                'CorrectionSignalEmitter: Word Already Indexed (%s)',
                 (indexed_word_mapping.text, indexed_word_mapping.user))
             return
 

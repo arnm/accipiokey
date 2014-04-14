@@ -1,11 +1,12 @@
+from accipiokey.core.apputils import emulate_key_events
 from accipiokey.core.documents import *
 from accipiokey.core.emitters import *
 from accipiokey.gui.windows import *
 from mongoengine.errors import ValidationError
 from PySide.QtGui import QApplication
+from singleton.singleton import ThreadSafeSingleton
 from textblob import TextBlob
 import mimetypes, os, threading
-from singleton.singleton import ThreadSafeSingleton
 
 @ThreadSafeSingleton
 class AccipioKeyApp(QObject):
@@ -24,12 +25,21 @@ class AccipioKeyApp(QObject):
         # private members
         self._user = None
 
-        # Init Emitters
+        # Handle Emitters
         WordSignalEmitter.instance()
-        CorrectionSignalEmitter.instance()
-        CompletionSignalEmitter.instance()
         ShortcutSignalEmitter.instance().app = self
+
+        CorrectionSignalEmitter.instance().app = self
+        CorrectionSignalEmitter.instance().correction_signal.connect(
+            self._on_correction_signal)
+
+        CompletionSignalEmitter.instance()
+        CompletionSignalEmitter.instance().completion_signal.connect(
+            self._on_completion_signal)
+
         SnippetSignalEmitter.instance().app = self
+        SnippetSignalEmitter.instance().snippet_signal.connect(
+            self._on_snippet_signal)
 
     def register(self, username, password):
         # check if user exists with that username
@@ -92,6 +102,126 @@ class AccipioKeyApp(QObject):
     def _process_writing(self, writing):
         pass
 
+    # TODO: incorporate user analytics
+    def _on_correction_signal(self, correction_signal):
+        KeySignalEmitter.instance().stop()
+
+        wed = WordSignalEmitter.instance()
+
+        Logger.debug(
+            'CorrectionSEmitter: Original Word Buffer(%s)',
+            wed.word_buffer)
+
+        num_deletions = len(wed.last_word) + 1
+
+        Logger.debug(
+            'CorrectionSEmitter: Deletions To Be Made (%d)',
+            num_deletions)
+
+        # remove incorrect word from buffer
+        for _ in range(num_deletions): del wed.word_buffer[-1]
+        # delete external app word
+        emulate_key_events(['backspace' for _ in range(num_deletions)])
+
+        # add space to corrected word b/c this is invoked after new words
+        correction = correction_signal + ' '
+
+        Logger.info(
+            'CorrectionSEmitter: Correction To Be Made (%s)',
+            list(correction))
+
+        # append new word to word buffer
+        for character in correction: wed.word_buffer.append(character)
+
+        # simulate corrected word keys in external app
+        emulate_key_events([character for character in correction])
+
+        Logger.debug(
+            'CorrectionSEmitter: Corrected Word Buffer(%s)',
+            wed.word_buffer)
+
+        Logger.info(
+            'CorrectionSEmitter: Last Word (%s) Current Word (%s)',
+            wed.last_word,
+            wed.current_word)
+
+        KeySignalEmitter.instance().poll_forever()
+
+    def _on_completion_signal(self, completion_signal):
+        KeySignalEmitter.instance().stop()
+
+        wed = WordSignalEmitter.instance()
+
+        Logger.debug(
+            'CompletionSignalHandler: Original Word Buffer(%s)',
+            wed.word_buffer)
+
+        # get remaining string of completion
+        postfix = completion_signal[len(wed.current_word):]
+
+        Logger.debug('CompletionSignalHandler: Postfix (%s)', postfix)
+
+        # append postfix to word buffer
+        for character in postfix: wed.word_buffer.append(character)
+
+        # simulate postfix keys in external app
+        emulate_key_events([character for character in postfix])
+
+        Logger.debug(
+            'CompletionSignalHandler: Corrected Word Buffer(%s)',
+            wed.word_buffer)
+
+        Logger.info(
+            'CompletionSignalHandler: Last Word (%s) Current Word (%s)',
+            wed.last_word,
+            wed.current_word)
+
+        KeySignalEmitter.instance().poll_forever()
+
+    # TODO: incorporate analytics
+    def _on_snippet_signal(self, snippet_signal):
+        KeySignalEmitter.instance().stop()
+
+        wed = WordSignalEmitter.instance()
+
+        Logger.debug(
+            'SnippetSignalHandler: Original Word Buffer(%s)',
+            wed.word_buffer)
+
+        num_deletions = len(wed.current_word)
+
+        Logger.debug(
+            'SnippetSignalHandler: Deletions To Be Made (%d)',
+            num_deletions)
+
+        # remove incorrect word from buffer
+        for _ in range(num_deletions): del wed.word_buffer[-1]
+        # delete external app word
+        emulate_key_events(['backspace' for _ in range(num_deletions)])
+
+        # add space to corrected word b/c this is invoked after new words
+        correction = snippet_signal.itervalues().next()
+
+        Logger.info(
+            'SnippetSignalHandler: Correction To Be Made (%s)',
+            list(correction))
+
+        # append new word to word buffer
+        for character in correction: wed.word_buffer.append(character)
+
+        # simulate corrected word keys in external app
+        emulate_key_events([character for character in correction])
+
+        Logger.debug(
+            'SnippetSignalHandler: Corrected Word Buffer(%s)',
+            wed.word_buffer)
+
+        Logger.info(
+            'SnippetSignalHandler: Last Word (%s) Current Word (%s)',
+            wed.last_word,
+            wed.current_word)
+
+        KeySignalEmitter.instance().poll_forever()
 
 class AccipioKeyAppController(QApplication):
 

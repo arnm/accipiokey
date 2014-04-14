@@ -1,3 +1,4 @@
+from evdev import ecodes, UInput
 
 # TODO: fix this hack
 def keycode_to_unicode(keycode): return keycode.replace('KEY_', '').lower()
