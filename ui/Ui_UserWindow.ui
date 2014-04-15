@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>410</width>
-    <height>342</height>
+    <width>408</width>
+    <height>371</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
-     <widget class="QTabWidget" name="tabWidget">
+     <widget class="QTabWidget" name="main_tw">
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -25,8 +25,28 @@
         <string>Usage Stats</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="0">
-         <widget class="QTableView" name="tableView"/>
+        <item row="1" column="1">
+         <widget class="QPushButton" name="improve_btn">
+          <property name="text">
+           <string>Improve...</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="0" column="0" colspan="2">
+         <widget class="QTableView" name="stats_tv"/>
         </item>
        </layout>
       </widget>
@@ -34,6 +54,42 @@
        <attribute name="title">
         <string>Settings</string>
        </attribute>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="1" column="0" colspan="2">
+         <widget class="QGroupBox" name="snippets_gb">
+          <property name="title">
+           <string>Snippets</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_6">
+           <item row="0" column="0">
+            <widget class="QTableView" name="snippets_tv"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="0" colspan="2">
+         <widget class="QGroupBox" name="shortcuts_gb">
+          <property name="title">
+           <string>Shortcuts</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="0" column="0">
+            <widget class="QTableView" name="shortcuts_tv"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="playground_tab">
+       <attribute name="title">
+        <string>Playground</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="0" column="0">
+         <widget class="QTextEdit" name="playground_te"/>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
@@ -51,14 +107,23 @@
     <bool>false</bool>
    </attribute>
    <addaction name="separator"/>
-   <addaction name="actionLogout"/>
   </widget>
   <action name="actionLogout">
    <property name="text">
-    <string>logout</string>
+    <string>Log Out</string>
+   </property>
+   <property name="toolTip">
+    <string>Log Out</string>
    </property>
   </action>
  </widget>
+ <tabstops>
+  <tabstop>main_tw</tabstop>
+  <tabstop>stats_tv</tabstop>
+  <tabstop>shortcuts_tv</tabstop>
+  <tabstop>snippets_tv</tabstop>
+  <tabstop>playground_te</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

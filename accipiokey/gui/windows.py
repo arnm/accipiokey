@@ -1,6 +1,7 @@
 from accipiokey.gui.ui.Ui_LoginWindow import Ui_LoginWindow
 from accipiokey.gui.ui.Ui_RegisterWindow import Ui_RegisterWindow
 from accipiokey.gui.ui.Ui_UserWindow import Ui_UserWindow
+from accipiokey.gui.ui.Ui_NotificationWindow import Ui_NotificationWindow
 from PySide.QtCore import *
 from PySide.QtGui import *
 
@@ -97,11 +98,33 @@ class UserWindow(QMainWindow):
         self.ui = Ui_UserWindow()
         self.ui.setupUi(self)
 
+        self.notification_window = NotificationWindow(self)
+
         self.ui.app_state_combo = QComboBox()
         self.ui.app_state_combo.addItems([self.APP_OFF, self.APP_ON])
         self.ui.toolBar.addWidget(self.ui.app_state_combo)
+        self.ui.toolBar.addAction(self.ui.actionLogout)
 
         # center window
         r = self.geometry()
         r.moveCenter(QApplication.desktop().availableGeometry().center())
+        self.setGeometry(r)
+
+class NotificationWindow(QMainWindow):
+
+    def __init__(self, parent=None):
+        super(NotificationWindow, self).__init__(parent,
+            Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+
+        # ui setup
+        self.ui = Ui_NotificationWindow()
+        self.ui.setupUi(self)
+        self.setWindowTitle('Accipio Key Notifications')
+
+        self.setWindowOpacity(0.85)
+
+        # position window
+        r = self.geometry()
+        r.moveCenter(QApplication.desktop().availableGeometry().center())
+        r.moveBottom(QApplication.desktop().availableGeometry().bottom())
         self.setGeometry(r)

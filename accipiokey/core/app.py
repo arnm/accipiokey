@@ -66,6 +66,7 @@ class AccipioKeyApp(QObject):
                 },
                 snippets={'lol': 'laugh out loud'}).save()
         except ValidationError:
+            # check documents for specify error
             Logger.debug('AccipioKeyApp: Registration Validation Error')
             return False
 
@@ -281,9 +282,22 @@ class AccipioKeyAppController(QApplication):
 
     def __init__(self, argv):
         super(AccipioKeyAppController, self).__init__(argv)
-        self._app = AccipioKeyApp.instance()
 
+        # emitter signals
+        CorrectionSignalEmitter.instance().possible_correction_signal.connect(
+            self._on_possible_correction_signal)
+
+        CompletionSignalEmitter.instance().possible_completion_signal.connect(
+            self._on_possible_completion_signal)
+
+        WordSignalEmitter.instance().current_word_signal.connect(
+            self._on_current_word_signal)
+
+        # members
+        self._app = AccipioKeyApp.instance()
         self._user_window = UserWindow()
+
+        # window signals
         self._user_window.ui.app_state_combo.currentIndexChanged.connect(
             self._on_app_state_combo_change)
         self._user_window.ui.actionLogout.triggered.connect(self._on_app_logout)
@@ -297,10 +311,13 @@ class AccipioKeyAppController(QApplication):
 
         @Slot(dict)
         def on_login_signal(credentials):
-            if self._app.login(credentials['username'],credentials['password']):
-                login_window.close()
-                self._user_window.setWindowTitle(self._app.user.username)
-                self._user_window.show()
+            if not self._app.login(credentials['username'],credentials['password']):
+                login_window.ui.statusbar.showMessage('Invalid credentials', 3000)
+                return
+
+            login_window.close()
+            self._user_window.setWindowTitle(self._app.user.username)
+            self._user_window.show()
 
         @Slot()
         def on_register_signal():
@@ -308,8 +325,11 @@ class AccipioKeyAppController(QApplication):
 
             @Slot(dict)
             def on_register_signal(credentials):
-                if self._app.register(credentials['username'], credentials['password']):
-                    register_window.close()
+                if not self._app.register(credentials['username'], credentials['password']):
+                    register_window.ui.statusbar.showMessage('Invalid fields', 3000)
+                    return
+
+                register_window.close()
 
             @Slot()
             def on_cancel_signal():
@@ -329,10 +349,50 @@ class AccipioKeyAppController(QApplication):
 
         if text == UserWindow.APP_ON:
             self._app.start()
+            self._user_window.notification_window.show()
         elif text == UserWindow.APP_OFF:
             self._app.stop()
+            self._user_window.notification_window.close()
 
     def _on_app_logout(self):
         self._app.logout()
         self._user_window.close()
         self._run()
+
+    def _get_rich_text(self, msg, color, font_size=20):
+        rich_text = '''
+            <html>
+            <head/>
+            <body>
+            <p align="center">
+                <span style=" font-size:%spt; font-weight:600; color:#%s;">
+                %s
+                </span>
+            </p>
+            </body>
+            </html>''' % (font_size, color, msg)
+
+        return rich_text
+
+    @Slot(str)
+    def _on_possible_completion_signal(self, possible_completion_signal):
+        rich_text = self._get_rich_text(possible_completion_signal, '00C20D')
+        self._user_window.notification_window.ui.completion_lbl.setText(rich_text)
+
+    @Slot(str)
+    def _on_possible_correction_signal(self, possible_correction_signal):
+        if not possible_correction_signal:
+            self._user_window.notification_window.ui.correction_lbl.setText('')
+            return
+
+        rich_text = self._get_rich_text(possible_correction_signal, 'FF0000')
+        self._user_window.notification_window.ui.correction_lbl.setText(rich_text)
+
+    @Slot(str)
+    def _on_current_word_signal(self, current_word_signal):
+        if not current_word_signal in self._app.user.snippets:
+            self._user_window.notification_window.ui.snippet_lbl.setText('')
+            return
+
+        rich_text = self._get_rich_text(current_word_signal, '245BFF')
+        self._user_window.notification_window.ui.snippet_lbl.setText(rich_text)

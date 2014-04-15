@@ -47,12 +47,12 @@ class KeySignalEmitter(QObject):
         self._running = True
         self._polling = True
 
-    # will allow polling but will not emitt key events therefore flushing queue
+    # will allow polling but will not emit key events therefore flushing queue
     # user for discarding unwanted key events
     def stop(self):
         self._running = False
 
-    # will pause polling but will allow queue to register key events
+    # will pause polling but will allow events to be queued to later read
     def pause(self):
         self._polling = False
 
@@ -104,6 +104,7 @@ class WordSignalEmitter(QObject):
     indexed_word_signal = Signal(str)
     user = None
 
+    # TODO: check if these need to be exposed
     current_word = ''
     last_word = ''
     word_buffer = []
@@ -119,7 +120,7 @@ class WordSignalEmitter(QObject):
 
         self.current_word_signal.connect(lambda cws:
             Logger.info(
-                'WordSignalEmitter: Last Word (%s) Word Event (%s)',
+                'WordSignalEmitter: Last Word (%s) Current Word (%s)',
                 self.last_word, cws))
 
     # TODO: verify this is correct
@@ -151,7 +152,6 @@ class WordSignalEmitter(QObject):
 
                 if check_if_indexed(self.user, self.last_word):
                     self.indexed_word_signal.emit(self.last_word)
-
                 return
 
             # append current key to current word
@@ -163,7 +163,11 @@ class WordSignalEmitter(QObject):
             self.current_word = word_list[-1]
             self.current_word_signal.emit(self.current_word)
         else:
+            self.current_word = ''
             self.last_word = ''
+
+            self.last_word_signal.emit(self.last_word)
+            self.current_word_signal.emit(self.current_word)
 
     @Slot(object)
     def on_key_signal(self, key_signal):
@@ -256,13 +260,14 @@ class CompletionSignalEmitter(QObject):
         if not self._possible_completion:
             Logger.debug(
                 'CompletionSignalEmitter: No Completion Found (%s)',
-                self.WordSignalEmitter.instance().current_word)
+                WordSignalEmitter.instance().current_word)
             return
 
         self.completion_signal.emit(self._possible_completion)
 
     @Slot(str)
     def on_current_word_signal(self, word_signal):
+
         suggestion_name = 'completion_suggestion'
         compl_resp = get_es().suggest(index=WordMappingType.get_index(),
             body={
@@ -274,20 +279,33 @@ class CompletionSignalEmitter(QObject):
                 }
             })
         suggestions = compl_resp[suggestion_name][0]['options']
-        if suggestions:
-            top_suggestion = suggestions[0]['text']
-            self._possible_completion = top_suggestion
-        else:
-            self._possible_completion_event = ''
 
+        if not suggestions:
+            self._possible_completion = ''
+            self.possible_completion_signal.emit(self._possible_completion)
+            return
+
+        for suggestion in suggestions:
+            if suggestion['text'] != word_signal:
+                top_suggestion = suggestion['text']
+                self._possible_completion = top_suggestion
+                break
+
+        self.possible_completion_signal.emit(self._possible_completion)
+
+# TODO: clean up redundent code
 @ThreadSafeSingleton
 class CorrectionSignalEmitter(QObject):
 
     correction_signal = Signal(str)
+    possible_correction_signal = Signal(str)
     user = None
 
     def __init__(self, parent=None):
         QObject.__init__(self, parent)
+
+        WordSignalEmitter.instance().current_word_signal.connect(
+            self.on_current_word_signal)
 
         WordSignalEmitter.instance().last_word_signal.connect(
             self.on_last_word_signal)
@@ -297,9 +315,44 @@ class CorrectionSignalEmitter(QObject):
                 'CorrectionSignalEmitter: Correction Signal (%s)', cs))
 
     @Slot(str)
+    def on_current_word_signal(self, current_word_signal):
+        # check if last word is blank
+        if not current_word_signal:
+            self.possible_correction_signal.emit('')
+            return
+
+        if check_if_indexed(self.user, current_word_signal):
+            Logger.info(
+                'CorrectionSignalEmitter: Word Already Indexed (%s, %s)',
+                current_word_signal, str(self.user.id))
+            self.possible_correction_signal.emit('')
+            return
+
+        Logger.info(
+            'CorrectionSignalEmitter: Word Not Found: (%s)',
+            current_word_signal)
+
+        # get suggestion for unknown word
+        searcher = S(WordMappingType)
+        suggestion_name = 'correction_suggestion'
+        suggest_query = searcher.suggest(
+            suggestion_name,
+            current_word_signal,
+            field='text')
+        suggestions = suggest_query.suggestions()[suggestion_name][0]['options']
+
+        if not suggestions:
+            self.possible_correction_signal.emit('')
+            return
+
+        # correct last word if necessary
+        top_suggestion = suggestions[0]['text']
+        self.possible_correction_signal.emit(top_suggestion)
+
+    @Slot(str)
     def on_last_word_signal(self, last_word_signal):
         # check if last word is blank
-        if not str(last_word_signal): return
+        if not last_word_signal: return
 
         if check_if_indexed(self.user, last_word_signal):
             Logger.info(
