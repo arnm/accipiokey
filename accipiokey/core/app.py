@@ -1,4 +1,5 @@
 from accipiokey.core.apputils import emulate_key_events
+from accipiokey.core.esutils import index_new_words
 from accipiokey.core.documents import *
 from accipiokey.core.emitters import *
 from accipiokey.gui.windows import *
@@ -47,10 +48,13 @@ class AccipioKeyApp(QObject):
         SnippetSignalEmitter.instance().user = self.user
 
     def register(self, username, password):
+
         # check if user exists with that username
         if User.objects(username=username).count():
+            Logger.info('AccipioKeyApp: User Name Taken (%s)', username)
             return False
 
+        Logger.info('AccipioKeyApp: Registering (%s)', username)
         # setup default user in DB
         try:
             user = User(
@@ -62,8 +66,10 @@ class AccipioKeyApp(QObject):
                 },
                 snippets={'lol': 'laugh out loud'}).save()
         except ValidationError:
+            Logger.debug('AccipioKeyApp: Registration Validation Error')
             return False
 
+        Logger.debug('AccipioKeyApp: Indexing Default Words for User (%s)', user.username)
         # index default words for new user
         with open(settings.DEFAULT_CORPUS) as corpus:
             thread = threading.Thread(
@@ -71,6 +77,7 @@ class AccipioKeyApp(QObject):
                 args=(user, corpus.readlines(),))
             thread.daemon = True
             thread.start()
+        Logger.info('AccipioKeyApp: User Registered (%s)', user.username)
         return True
 
     def login(self, username, password):
@@ -101,7 +108,7 @@ class AccipioKeyApp(QObject):
 
         Logger.debug('AccipioKeyApp: Starting')
         self._init_emitters()
-        KeySignalEmitter.instance().poll_forever()
+        KeySignalEmitter.instance().run()
 
     # TODO: this doesn't really stop recording of keys
     def stop(self):
@@ -122,7 +129,7 @@ class AccipioKeyApp(QObject):
             return
 
         Logger.debug('AccipioKeyApp: Logging Out (%s)', self.user.username)
-        KeySignalEmitter.instance().stop()
+        KeySignalEmitter.instance().pause()
         self._user = None
 
     def add_writing(self, path):
@@ -149,7 +156,7 @@ class AccipioKeyApp(QObject):
     # TODO: incorporate user analytics
     @Slot(str)
     def _on_correction_signal(self, correction_signal):
-        KeySignalEmitter.instance().stop()
+        KeySignalEmitter.instance().pause()
 
         wed = WordSignalEmitter.instance()
 
@@ -190,11 +197,11 @@ class AccipioKeyApp(QObject):
             wed.last_word,
             wed.current_word)
 
-        KeySignalEmitter.instance().poll_forever()
+        KeySignalEmitter.instance().run()
 
     @Slot(str)
     def _on_completion_signal(self, completion_signal):
-        KeySignalEmitter.instance().stop()
+        KeySignalEmitter.instance().pause()
 
         wed = WordSignalEmitter.instance()
 
@@ -222,12 +229,12 @@ class AccipioKeyApp(QObject):
             wed.last_word,
             wed.current_word)
 
-        KeySignalEmitter.instance().poll_forever()
+        KeySignalEmitter.instance().run()
 
     # TODO: incorporate analytics
     @Slot(dict)
     def _on_snippet_signal(self, snippet_signal):
-        KeySignalEmitter.instance().stop()
+        KeySignalEmitter.instance().pause()
 
         wed = WordSignalEmitter.instance()
 
@@ -268,7 +275,7 @@ class AccipioKeyApp(QObject):
             wed.last_word,
             wed.current_word)
 
-        KeySignalEmitter.instance().poll_forever()
+        KeySignalEmitter.instance().run()
 
 class AccipioKeyAppController(QApplication):
 
@@ -277,8 +284,8 @@ class AccipioKeyAppController(QApplication):
         self._app = AccipioKeyApp.instance()
 
         self._user_window = UserWindow()
-        self._user_window.ui.actionStart.triggered.connect(self._on_app_start)
-        self._user_window.ui.actionStop.triggered.connect(self._on_app_stop)
+        self._user_window.ui.app_state_combo.currentIndexChanged.connect(
+            self._on_app_state_combo_change)
         self._user_window.ui.actionLogout.triggered.connect(self._on_app_logout)
 
     def exec_(self):
@@ -301,8 +308,7 @@ class AccipioKeyAppController(QApplication):
 
             @Slot(dict)
             def on_register_signal(credentials):
-                if self._app.register(
-                    credentials['username'], credentials['password']):
+                if self._app.register(credentials['username'], credentials['password']):
                     register_window.close()
 
             @Slot()
@@ -310,17 +316,21 @@ class AccipioKeyAppController(QApplication):
                 register_window.close()
 
             register_window.register_signal.connect(on_register_signal)
+            register_window.cancel_signal.connect(on_cancel_signal)
             register_window.show()
 
         login_window.login_signal.connect(on_login_signal)
         login_window.register_signal.connect(on_register_signal)
         login_window.show()
 
-    def _on_app_start(self):
-        self._app.start()
+    @Slot(int)
+    def _on_app_state_combo_change(self, index):
+        text = self._user_window.ui.app_state_combo.itemText(index)
 
-    def _on_app_stop(self):
-        self._app.stop()
+        if text == UserWindow.APP_ON:
+            self._app.start()
+        elif text == UserWindow.APP_OFF:
+            self._app.stop()
 
     def _on_app_logout(self):
         self._app.logout()

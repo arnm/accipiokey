@@ -50,23 +50,12 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionStart"/>
-   <addaction name="actionStop"/>
+   <addaction name="separator"/>
    <addaction name="actionLogout"/>
   </widget>
   <action name="actionLogout">
    <property name="text">
     <string>logout</string>
-   </property>
-  </action>
-  <action name="actionStart">
-   <property name="text">
-    <string>start</string>
-   </property>
-  </action>
-  <action name="actionStop">
-   <property name="text">
-    <string>stop</string>
    </property>
   </action>
  </widget>

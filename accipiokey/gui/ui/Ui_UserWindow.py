@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file './ui/Ui_UserWindow.ui'
 #
-# Created: Mon Apr 14 11:24:52 2014
+# Created: Mon Apr 14 19:34:02 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -40,12 +40,7 @@ class Ui_UserWindow(object):
         UserWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
         self.actionLogout = QtGui.QAction(UserWindow)
         self.actionLogout.setObjectName("actionLogout")
-        self.actionStart = QtGui.QAction(UserWindow)
-        self.actionStart.setObjectName("actionStart")
-        self.actionStop = QtGui.QAction(UserWindow)
-        self.actionStop.setObjectName("actionStop")
-        self.toolBar.addAction(self.actionStart)
-        self.toolBar.addAction(self.actionStop)
+        self.toolBar.addSeparator()
         self.toolBar.addAction(self.actionLogout)
 
         self.retranslateUi(UserWindow)
@@ -58,6 +53,4 @@ class Ui_UserWindow(object):
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.settings_tab), QtGui.QApplication.translate("UserWindow", "Settings", None, QtGui.QApplication.UnicodeUTF8))
         self.toolBar.setWindowTitle(QtGui.QApplication.translate("UserWindow", "toolBar", None, QtGui.QApplication.UnicodeUTF8))
         self.actionLogout.setText(QtGui.QApplication.translate("UserWindow", "logout", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionStart.setText(QtGui.QApplication.translate("UserWindow", "start", None, QtGui.QApplication.UnicodeUTF8))
-        self.actionStop.setText(QtGui.QApplication.translate("UserWindow", "stop", None, QtGui.QApplication.UnicodeUTF8))
 

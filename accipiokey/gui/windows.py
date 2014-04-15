@@ -23,6 +23,11 @@ class LoginWindow(QMainWindow):
         self.setWindowTitle('Accipio Key Login')
         self.ui.username_le.setFocus()
 
+        # center window
+        r = self.geometry()
+        r.moveCenter(QApplication.desktop().availableGeometry().center())
+        self.setGeometry(r)
+
     def _on_login_btn_click(self):
         username = self.ui.username_le.text().encode('utf-8').strip()
         password = self.ui.password_le.text().encode('utf-8')
@@ -59,15 +64,20 @@ class RegisterWindow(QMainWindow):
         self.setWindowTitle('Accipio Key Registration')
         self.ui.username_le.setFocus()
 
+        # center window
+        r = self.geometry()
+        r.moveCenter(QApplication.desktop().availableGeometry().center())
+        self.setGeometry(r)
+
     def _on_register_btn_click(self):
         username = self.ui.username_le.text().encode('utf-8').strip()
-        passowrd1 = self.ui.password1_le.text().encode('utf-8').strip()
+        password1 = self.ui.password1_le.text().encode('utf-8').strip()
         password2 = self.ui.password2_le.text().encode('utf-8').strip()
 
         if not username:
             self.ui.statusbar.showMessage('Input a username', 3000)
             return
-        if not password1 or not password2 or passowrd1 != password2:
+        if not password1 or not password2 or password1 != password2:
             self.ui.statusbar.showMessage('Input matching passwords', 3000)
             return
 
@@ -78,8 +88,20 @@ class RegisterWindow(QMainWindow):
 
 class UserWindow(QMainWindow):
 
+    APP_ON, APP_OFF = ('On', 'Off')
+
     def __init__(self, parent=None):
         super(UserWindow, self).__init__(parent)
 
+        # ui setup
         self.ui = Ui_UserWindow()
         self.ui.setupUi(self)
+
+        self.ui.app_state_combo = QComboBox()
+        self.ui.app_state_combo.addItems([self.APP_OFF, self.APP_ON])
+        self.ui.toolBar.addWidget(self.ui.app_state_combo)
+
+        # center window
+        r = self.geometry()
+        r.moveCenter(QApplication.desktop().availableGeometry().center())
+        self.setGeometry(r)

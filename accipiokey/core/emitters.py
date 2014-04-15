@@ -9,7 +9,7 @@ from PySide.QtCore import QObject, Signal, Slot
 from select import select
 from singleton.singleton import ThreadSafeSingleton
 from textblob import TextBlob, Word
-from threading import Thread
+import threading
 from time import clock, sleep
 
 
@@ -22,7 +22,12 @@ class KeySignalEmitter(QObject):
         QObject.__init__(self, parent)
 
         self._dev = InputDevice('/dev/input/event0')
+        self._polling = True
         self._running = False
+
+        self.thread = threading.Thread(target=self._loop)
+        self.thread.daemon = True
+        self.thread.start()
 
         # debug statements
         # self.key_signal.connect(
@@ -32,27 +37,30 @@ class KeySignalEmitter(QObject):
     def running(self):
         return self._running
 
-    def poll(self):
+    def _poll(self):
         r, w, x = select([self._dev], [], [])
         for event in self._dev.read():
-            if event.type == ecodes.EV_KEY:
+            if self._running and event.type == ecodes.EV_KEY:
                 self.key_signal.emit(categorize(event))
 
-    # TODO: this is probably completely wrong but it kinda works
-    def poll_forever(self):
-        if not self._running:
-            thread = Thread(target=self._poll_forever)
-            thread.daemon = True
-            self._running = True
-            thread.start()
+    def run(self):
+        self._running = True
+        self._polling = True
 
+    # will allow polling but will not emitt key events therefore flushing queue
+    # user for discarding unwanted key events
     def stop(self):
         self._running = False
 
-    def _poll_forever(self):
-        while self._running:
-            sleep(0.2)
-            self.poll()
+    # will pause polling but will allow queue to register key events
+    def pause(self):
+        self._polling = False
+
+    def _loop(self):
+        while True:
+            if self._polling:
+                sleep(0.2)
+                self._poll()
 
 @ThreadSafeSingleton
 class KeyboardStateSignalEmitter(QObject):
