@@ -46,6 +46,11 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>snippet_le</tabstop>
+  <tabstop>text_le</tabstop>
+  <tabstop>buttonBox</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

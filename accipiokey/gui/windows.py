@@ -3,6 +3,8 @@ from accipiokey.gui.ui.Ui_LoginWindow import Ui_LoginWindow
 from accipiokey.gui.ui.Ui_NotificationWindow import Ui_NotificationWindow
 from accipiokey.gui.ui.Ui_RegisterWindow import Ui_RegisterWindow
 from accipiokey.gui.ui.Ui_UserWindow import Ui_UserWindow
+from accipiokey.core.emitters import *
+from accipiokey.core.logger import Logger
 from itertools import izip
 from PySide.QtCore import *
 from PySide.QtGui import *
@@ -21,6 +23,8 @@ class LoginWindow(QMainWindow):
         # signals
         self.ui.login_btn.clicked.connect(self._on_login_btn_click)
         self.ui.register_btn.clicked.connect(self._on_register_btn_click)
+        self.ui.password_le.returnPressed.connect(
+            self._on_password_le_return_pressed)
 
         # ui setup
         self.setWindowTitle('Accipio Key Login')
@@ -30,6 +34,9 @@ class LoginWindow(QMainWindow):
         r = self.geometry()
         r.moveCenter(QApplication.desktop().availableGeometry().center())
         self.setGeometry(r)
+
+    def _on_password_le_return_pressed(self):
+        self._on_login_btn_click()
 
     def _on_login_btn_click(self):
         username = self.ui.username_le.text().encode('utf-8').strip()
@@ -132,7 +139,8 @@ class UserWindow(QMainWindow):
         self.ui.toolBar.addWidget(self.ui.app_state_toggle_btn)
         self.ui.toolBar.addAction(self.ui.actionLogout)
 
-        self.notification_window = NotificationWindow(self)
+        self.notification_window = NotificationWindow(user=self._user,
+                                                        parent=self)
         self.ui.nw_pos_combo.addItems([
             NotificationWindow.TOP,
             NotificationWindow.BOTTOM,
@@ -193,17 +201,27 @@ class UserWindow(QMainWindow):
         nsd = NewSnippetDialog(self)
 
         def on_accepted():
-            print('accepted')
-
-        def on_rejected():
-            print('rejected')
+            snippet = nsd.ui.snippet_le.text().strip()
+            text = nsd.ui.text_le.text().strip()
+            self._user.snippets[snippet] = text
+            Logger.info('UserWindow: Adding Snippet (%s)', {snippet: text})
+            self._user.save()
+            self.snippets_model.appendRow(
+                [QStandardItem(snippet), QStandardItem(text)])
 
         nsd.ui.buttonBox.accepted.connect(on_accepted)
-        nsd.ui.buttonBox.rejected.connect(on_rejected)
         nsd.show()
 
+    # TODO: working on this
     def _on_remove_snippet_btn_clicked(self):
-        print('REMOVE')
+        indexes = self.ui.snippets_tv.selectionModel().selection().indexes()
+        for index in indexes:
+            if self.snippets_model.hasIndex(index.row(), index.column()):
+                snippet = self.snippets_model.data(index)
+                Logger.info('UserWindow: Removing Snippet (%s)', snippet)
+                self.snippets_model.removeRow(index.row())
+                del self._user.snippets[snippet]
+                self._user.save()
 
     # TODO: changing shortcuts needs to be restricted to acceptable values
     def _on_shortcuts_model_item_changed(self, item):
@@ -225,9 +243,11 @@ class NotificationWindow(QMainWindow):
     TOP_LEFT, TOP_RIGHT = ('Top Left', 'Top Right')
     BOTTOM_LEFT, BOTTOM_RIGHT = ('Bottom Left', 'Bottom Right')
 
-    def __init__(self, parent=None):
+    def __init__(self, user, parent=None):
         super(NotificationWindow, self).__init__(parent,
             Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint) # Window flags
+
+        self._user = user
 
         # ui setup
         self.ui = Ui_NotificationWindow()
@@ -236,6 +256,54 @@ class NotificationWindow(QMainWindow):
 
         self.setWindowOpacity(0.85)
         self.set_position(self.TOP)
+
+        # emitter signals
+        CorrectionSignalEmitter.instance().possible_correction_signal.connect(
+            self._on_possible_correction_signal)
+
+        CompletionSignalEmitter.instance().possible_completion_signal.connect(
+            self._on_possible_completion_signal)
+
+        WordSignalEmitter.instance().current_word_signal.connect(
+            self._on_current_word_signal)
+
+    def _get_rich_text(self, msg, color, font_size=16):
+        rich_text = '''
+            <html>
+            <head/>
+            <body>
+            <p align="center">
+                <span style=" font-size:%spt; font-weight:600; color:#%s;">
+                %s
+                </span>
+            </p>
+            </body>
+            </html>''' % (font_size, color, msg)
+
+        return rich_text
+
+    @Slot(str)
+    def _on_possible_completion_signal(self, possible_completion_signal):
+        rich_text = self._get_rich_text(possible_completion_signal, '00C20D')
+        self.ui.completion_lbl.setText(rich_text)
+
+    @Slot(str)
+    def _on_possible_correction_signal(self, possible_correction_signal):
+        if not possible_correction_signal:
+            self.ui.correction_lbl.setText('')
+            return
+
+        rich_text = self._get_rich_text(possible_correction_signal, 'FF0000')
+        self.ui.correction_lbl.setText(rich_text)
+
+    @Slot(str)
+    def _on_current_word_signal(self, current_word_signal):
+        if not current_word_signal in self._user.snippets:
+            self.ui.snippet_lbl.setText('')
+            return
+
+        rich_text = self._get_rich_text(current_word_signal, '245BFF')
+        self.ui.snippet_lbl.setText(rich_text)
 
     def set_position(self, pos):
         if pos == self.TOP: self.pin_top()

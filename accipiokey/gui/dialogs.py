@@ -10,14 +10,30 @@ class NewSnippetDialog(QDialog):
     def __init__(self, parent):
         super(NewSnippetDialog, self).__init__(parent)
 
+        # ui setup
         self.ui = Ui_NewSnippetDialog()
         self.ui.setupUi(self)
 
-        self.ui.buttonBox.accepted.connect(self._on_buttonBox_accepted)
-        self.ui.buttonBox.rejected.connect(self._on_buttonBox_rejected)
+        self.setWindowTitle('Add New Snippet')
+        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.ui.snippet_le.setFocus()
 
-    def _on_buttonBox_accepted(self):
-        pass
+        self.ui.snippet_le.textChanged.connect(self._on_snippet_le_change)
+        self.ui.text_le.textChanged.connect(self._on_text_le_change)
 
-    def _on_buttonBox_rejected(self):
-        pass
+    def _on_snippet_le_change(self, text):
+        self._update_le()
+
+    def _on_text_le_change(self, text):
+        self._update_le()
+
+    def _update_le(self):
+        if not self.ui.snippet_le.text().strip():
+            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
+            return
+
+        if not self.ui.text_le.text().strip():
+            self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
+            return
+
+        self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(True)

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file './ui/Ui_NotificationWindow.ui'
 #
-# Created: Wed Apr 16 10:46:48 2014
+# Created: Wed Apr 16 13:12:49 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
