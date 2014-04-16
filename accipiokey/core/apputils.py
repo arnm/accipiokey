@@ -12,10 +12,11 @@ def unicode_to_keycode(unicode):
     return 'KEY_' + unicode.upper()
 
 # TODO: fix this hack
+# TODO: could be more efficient (UInput could remain open)
 def emulate_key_events(unicodes):
-    for uni in unicodes:
-        keycode = unicode_to_keycode(uni)
-        with UInput() as uinput:
+    with UInput() as uinput:
+        for uni in unicodes:
+            keycode = unicode_to_keycode(uni)
             exec('uinput.write(ecodes.EV_KEY, ecodes.' + keycode + ', 1)')
             exec('uinput.write(ecodes.EV_KEY, ecodes.' + keycode + ', 0)')
             uinput.syn()

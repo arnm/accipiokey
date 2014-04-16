@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file './ui/Ui_UserWindow.ui'
 #
-# Created: Tue Apr 15 16:15:27 2014
+# Created: Tue Apr 15 23:14:50 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_UserWindow(object):
     def setupUi(self, UserWindow):
         UserWindow.setObjectName("UserWindow")
-        UserWindow.resize(408, 371)
+        UserWindow.resize(410, 450)
         self.centralwidget = QtGui.QWidget(UserWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtGui.QGridLayout(self.centralwidget)
@@ -43,7 +43,7 @@ class Ui_UserWindow(object):
         self.snippets_tv = QtGui.QTableView(self.snippets_gb)
         self.snippets_tv.setObjectName("snippets_tv")
         self.gridLayout_6.addWidget(self.snippets_tv, 0, 0, 1, 1)
-        self.gridLayout_3.addWidget(self.snippets_gb, 1, 0, 1, 2)
+        self.gridLayout_3.addWidget(self.snippets_gb, 3, 0, 1, 2)
         self.shortcuts_gb = QtGui.QGroupBox(self.settings_tab)
         self.shortcuts_gb.setObjectName("shortcuts_gb")
         self.gridLayout_4 = QtGui.QGridLayout(self.shortcuts_gb)
@@ -51,7 +51,20 @@ class Ui_UserWindow(object):
         self.shortcuts_tv = QtGui.QTableView(self.shortcuts_gb)
         self.shortcuts_tv.setObjectName("shortcuts_tv")
         self.gridLayout_4.addWidget(self.shortcuts_tv, 0, 0, 1, 1)
-        self.gridLayout_3.addWidget(self.shortcuts_gb, 0, 0, 1, 2)
+        self.gridLayout_3.addWidget(self.shortcuts_gb, 2, 0, 1, 2)
+        self.general_gb = QtGui.QGroupBox(self.settings_tab)
+        self.general_gb.setObjectName("general_gb")
+        self.gridLayout_7 = QtGui.QGridLayout(self.general_gb)
+        self.gridLayout_7.setObjectName("gridLayout_7")
+        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout_7.addItem(spacerItem1, 1, 3, 1, 1)
+        self.label = QtGui.QLabel(self.general_gb)
+        self.label.setObjectName("label")
+        self.gridLayout_7.addWidget(self.label, 0, 2, 1, 1)
+        self.nw_pos_combo = QtGui.QComboBox(self.general_gb)
+        self.nw_pos_combo.setObjectName("nw_pos_combo")
+        self.gridLayout_7.addWidget(self.nw_pos_combo, 1, 2, 1, 1)
+        self.gridLayout_3.addWidget(self.general_gb, 1, 0, 1, 2)
         self.main_tw.addTab(self.settings_tab, "")
         self.playground_tab = QtGui.QWidget()
         self.playground_tab.setObjectName("playground_tab")
@@ -87,6 +100,8 @@ class Ui_UserWindow(object):
         self.main_tw.setTabText(self.main_tw.indexOf(self.stats_tab), QtGui.QApplication.translate("UserWindow", "Usage Stats", None, QtGui.QApplication.UnicodeUTF8))
         self.snippets_gb.setTitle(QtGui.QApplication.translate("UserWindow", "Snippets", None, QtGui.QApplication.UnicodeUTF8))
         self.shortcuts_gb.setTitle(QtGui.QApplication.translate("UserWindow", "Shortcuts", None, QtGui.QApplication.UnicodeUTF8))
+        self.general_gb.setTitle(QtGui.QApplication.translate("UserWindow", "General", None, QtGui.QApplication.UnicodeUTF8))
+        self.label.setText(QtGui.QApplication.translate("UserWindow", "Notifications", None, QtGui.QApplication.UnicodeUTF8))
         self.main_tw.setTabText(self.main_tw.indexOf(self.settings_tab), QtGui.QApplication.translate("UserWindow", "Settings", None, QtGui.QApplication.UnicodeUTF8))
         self.main_tw.setTabText(self.main_tw.indexOf(self.playground_tab), QtGui.QApplication.translate("UserWindow", "Playground", None, QtGui.QApplication.UnicodeUTF8))
         self.toolBar.setWindowTitle(QtGui.QApplication.translate("UserWindow", "toolBar", None, QtGui.QApplication.UnicodeUTF8))

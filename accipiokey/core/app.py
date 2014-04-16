@@ -295,12 +295,7 @@ class AccipioKeyAppController(QApplication):
 
         # members
         self._app = AccipioKeyApp.instance()
-        self._user_window = UserWindow()
-
-        # window signals
-        self._user_window.ui.app_state_combo.currentIndexChanged.connect(
-            self._on_app_state_combo_change)
-        self._user_window.ui.actionLogout.triggered.connect(self._on_app_logout)
+        self._user_window = None
 
     def exec_(self):
         self._run()
@@ -314,10 +309,8 @@ class AccipioKeyAppController(QApplication):
             if not self._app.login(credentials['username'],credentials['password']):
                 login_window.ui.statusbar.showMessage('Invalid credentials', 3000)
                 return
-
             login_window.close()
-            self._user_window.setWindowTitle(self._app.user.username)
-            self._user_window.show()
+            self._init_user_window()
 
         @Slot()
         def on_register_signal():
@@ -343,6 +336,16 @@ class AccipioKeyAppController(QApplication):
         login_window.register_signal.connect(on_register_signal)
         login_window.show()
 
+    def _init_user_window(self):
+        self._user_window = UserWindow(self._app.user)
+
+        # signals
+        self._user_window.ui.app_state_combo.currentIndexChanged.connect(
+            self._on_app_state_combo_change)
+        self._user_window.ui.actionLogout.triggered.connect(self._on_app_logout)
+
+        self._user_window.show()
+
     @Slot(int)
     def _on_app_state_combo_change(self, index):
         text = self._user_window.ui.app_state_combo.itemText(index)
@@ -357,6 +360,7 @@ class AccipioKeyAppController(QApplication):
     def _on_app_logout(self):
         self._app.logout()
         self._user_window.close()
+        self._user_window = None
         self._run()
 
     def _get_rich_text(self, msg, color, font_size=20):

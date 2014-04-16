@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file './ui/Ui_RegisterWindow.ui'
 #
-# Created: Tue Apr 15 16:15:27 2014
+# Created: Tue Apr 15 23:14:49 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
