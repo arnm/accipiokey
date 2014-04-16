@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file './ui/Ui_UserWindow.ui'
 #
-# Created: Tue Apr 15 23:14:50 2014
+# Created: Wed Apr 16 10:46:48 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PySide import QtCore, QtGui
 class Ui_UserWindow(object):
     def setupUi(self, UserWindow):
         UserWindow.setObjectName("UserWindow")
-        UserWindow.resize(410, 450)
+        UserWindow.resize(410, 467)
         self.centralwidget = QtGui.QWidget(UserWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtGui.QGridLayout(self.centralwidget)
@@ -40,9 +40,17 @@ class Ui_UserWindow(object):
         self.snippets_gb.setObjectName("snippets_gb")
         self.gridLayout_6 = QtGui.QGridLayout(self.snippets_gb)
         self.gridLayout_6.setObjectName("gridLayout_6")
+        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout_6.addItem(spacerItem1, 1, 0, 1, 1)
         self.snippets_tv = QtGui.QTableView(self.snippets_gb)
         self.snippets_tv.setObjectName("snippets_tv")
-        self.gridLayout_6.addWidget(self.snippets_tv, 0, 0, 1, 1)
+        self.gridLayout_6.addWidget(self.snippets_tv, 0, 0, 1, 3)
+        self.add_snippet_btn = QtGui.QPushButton(self.snippets_gb)
+        self.add_snippet_btn.setObjectName("add_snippet_btn")
+        self.gridLayout_6.addWidget(self.add_snippet_btn, 1, 2, 1, 1)
+        self.remove_snippet_btn = QtGui.QPushButton(self.snippets_gb)
+        self.remove_snippet_btn.setObjectName("remove_snippet_btn")
+        self.gridLayout_6.addWidget(self.remove_snippet_btn, 1, 1, 1, 1)
         self.gridLayout_3.addWidget(self.snippets_gb, 3, 0, 1, 2)
         self.shortcuts_gb = QtGui.QGroupBox(self.settings_tab)
         self.shortcuts_gb.setObjectName("shortcuts_gb")
@@ -56,8 +64,8 @@ class Ui_UserWindow(object):
         self.general_gb.setObjectName("general_gb")
         self.gridLayout_7 = QtGui.QGridLayout(self.general_gb)
         self.gridLayout_7.setObjectName("gridLayout_7")
-        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.gridLayout_7.addItem(spacerItem1, 1, 3, 1, 1)
+        spacerItem2 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout_7.addItem(spacerItem2, 1, 3, 1, 1)
         self.label = QtGui.QLabel(self.general_gb)
         self.label.setObjectName("label")
         self.gridLayout_7.addWidget(self.label, 0, 2, 1, 1)
@@ -84,7 +92,6 @@ class Ui_UserWindow(object):
         UserWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
         self.actionLogout = QtGui.QAction(UserWindow)
         self.actionLogout.setObjectName("actionLogout")
-        self.toolBar.addSeparator()
 
         self.retranslateUi(UserWindow)
         self.main_tw.setCurrentIndex(0)
@@ -99,6 +106,8 @@ class Ui_UserWindow(object):
         self.improve_btn.setText(QtGui.QApplication.translate("UserWindow", "Improve...", None, QtGui.QApplication.UnicodeUTF8))
         self.main_tw.setTabText(self.main_tw.indexOf(self.stats_tab), QtGui.QApplication.translate("UserWindow", "Usage Stats", None, QtGui.QApplication.UnicodeUTF8))
         self.snippets_gb.setTitle(QtGui.QApplication.translate("UserWindow", "Snippets", None, QtGui.QApplication.UnicodeUTF8))
+        self.add_snippet_btn.setText(QtGui.QApplication.translate("UserWindow", "Add", None, QtGui.QApplication.UnicodeUTF8))
+        self.remove_snippet_btn.setText(QtGui.QApplication.translate("UserWindow", "Remove", None, QtGui.QApplication.UnicodeUTF8))
         self.shortcuts_gb.setTitle(QtGui.QApplication.translate("UserWindow", "Shortcuts", None, QtGui.QApplication.UnicodeUTF8))
         self.general_gb.setTitle(QtGui.QApplication.translate("UserWindow", "General", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("UserWindow", "Notifications", None, QtGui.QApplication.UnicodeUTF8))

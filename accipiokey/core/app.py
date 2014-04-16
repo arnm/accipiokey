@@ -340,22 +340,22 @@ class AccipioKeyAppController(QApplication):
         self._user_window = UserWindow(self._app.user)
 
         # signals
-        self._user_window.ui.app_state_combo.currentIndexChanged.connect(
-            self._on_app_state_combo_change)
+        self._user_window.ui.app_state_toggle_btn.toggled.connect(
+            self._on_app_state_toggle_btn_toggle)
         self._user_window.ui.actionLogout.triggered.connect(self._on_app_logout)
 
         self._user_window.show()
 
     @Slot(int)
-    def _on_app_state_combo_change(self, index):
-        text = self._user_window.ui.app_state_combo.itemText(index)
+    def _on_app_state_toggle_btn_toggle(self, checked):
 
-        if text == UserWindow.APP_ON:
-            self._app.start()
-            self._user_window.notification_window.show()
-        elif text == UserWindow.APP_OFF:
+        if not checked:
             self._app.stop()
             self._user_window.notification_window.close()
+            return
+
+        self._app.start()
+        self._user_window.notification_window.show()
 
     def _on_app_logout(self):
         self._app.logout()

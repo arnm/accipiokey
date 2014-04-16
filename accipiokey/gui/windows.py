@@ -1,7 +1,9 @@
+from accipiokey.gui.dialogs import *
 from accipiokey.gui.ui.Ui_LoginWindow import Ui_LoginWindow
+from accipiokey.gui.ui.Ui_NotificationWindow import Ui_NotificationWindow
 from accipiokey.gui.ui.Ui_RegisterWindow import Ui_RegisterWindow
 from accipiokey.gui.ui.Ui_UserWindow import Ui_UserWindow
-from accipiokey.gui.ui.Ui_NotificationWindow import Ui_NotificationWindow
+from itertools import izip
 from PySide.QtCore import *
 from PySide.QtGui import *
 
@@ -89,12 +91,6 @@ class RegisterWindow(QMainWindow):
 
 class UserWindow(QMainWindow):
 
-    APP_ON, APP_OFF = ('On', 'Off')
-
-    @property
-    def user(self):
-        return self._user
-
     def __init__(self, user, parent=None):
         super(UserWindow, self).__init__(parent)
 
@@ -104,33 +100,36 @@ class UserWindow(QMainWindow):
         self.ui = Ui_UserWindow()
         self.ui.setupUi(self)
 
-        self.setWindowTitle(self.user.username)
+        self.setWindowTitle(self._user.username)
 
         # snippets table view
-        self.snippet_model = QStandardItemModel()
-        self.snippet_model.setHorizontalHeaderLabels(['Snippet', 'Text'])
-        self.ui.snippets_tv.setModel(self.snippet_model)
+        self.snippets_model_headers = ['Snippet', 'Text']
+        self.snippets_model = QStandardItemModel()
+        self.snippets_model.setHorizontalHeaderLabels(self.snippets_model_headers)
+        self.ui.snippets_tv.setModel(self.snippets_model)
         self.ui.snippets_tv.horizontalHeader().setResizeMode(QHeaderView.Stretch)
 
-        for snippet, text in self.user.snippets.items():
-            self.snippet_model.appendRow([QStandardItem(snippet), QStandardItem(text)])
+        for snippet, text in self._user.snippets.items():
+            self.snippets_model.appendRow([QStandardItem(snippet), QStandardItem(text)])
 
         # shortcuts table view
+        self.shortcuts_model_headers = ['Shortcut', 'Binding']
         self.shortcuts_model = QStandardItemModel()
-        self.shortcuts_model.setHorizontalHeaderLabels(['Shortcut', 'Binding'])
+        self.shortcuts_model.setHorizontalHeaderLabels(self.shortcuts_model_headers)
         self.ui.shortcuts_tv.setModel(self.shortcuts_model)
         self.ui.shortcuts_tv.horizontalHeader().setResizeMode(QHeaderView.Stretch)
 
-        for shortcut, binding in self.user.shortcuts.items():
+        for shortcut, binding in self._user.shortcuts.items():
             shortcut_item = QStandardItem(shortcut)
             shortcut_item.setFlags(shortcut_item.flags() & ~Qt.ItemIsEditable)
             binding_item = QStandardItem(','.join(binding))
             self.shortcuts_model.appendRow([shortcut_item, binding_item])
 
         # toolbar setup
-        self.ui.app_state_combo = QComboBox()
-        self.ui.app_state_combo.addItems([self.APP_OFF, self.APP_ON])
-        self.ui.toolBar.addWidget(self.ui.app_state_combo)
+        self.ui.app_state_toggle_btn = QPushButton()
+        self.ui.app_state_toggle_btn.setText('On')
+        self.ui.app_state_toggle_btn.setCheckable(True)
+        self.ui.toolBar.addWidget(self.ui.app_state_toggle_btn)
         self.ui.toolBar.addAction(self.ui.actionLogout)
 
         self.notification_window = NotificationWindow(self)
@@ -149,8 +148,72 @@ class UserWindow(QMainWindow):
         self.setGeometry(r)
 
         # signal handling
+
+        self.snippets_model.itemChanged.connect(
+            self._on_snippets_model_item_changed)
+
+        self.ui.add_snippet_btn.clicked.connect(
+            self._on_add_snippet_btn_clicked)
+
+        self.ui.remove_snippet_btn.clicked.connect(
+            self._on_remove_snippet_btn_clicked)
+
+        self.shortcuts_model.itemChanged.connect(
+            self._on_shortcuts_model_item_changed)
+
         self.ui.nw_pos_combo.currentIndexChanged.connect(
             self._on_nw_pos_combo_change)
+
+    # TODO: remove hard coded strings
+    def _on_snippets_model_item_changed(self, item):
+        changed_row = item.index().row()
+        changed_column = item.index().column()
+
+        # TODO: find a way to just change snippets that were changed, not all
+        if self.snippets_model_headers[changed_column] == 'Snippet':
+            items = []
+            for row in xrange(self.snippets_model.rowCount()):
+                for column in xrange(self.snippets_model.columnCount()):
+                    index = self.snippets_model.index(row, column)
+                    data = self.snippets_model.data(index)
+                    items.append(data)
+            items_iter = iter(items)
+            snippets = dict(izip(items_iter, items_iter))
+            self._user.snippets = snippets
+            self._user.save()
+
+        elif self.snippets_model_headers[changed_column] == 'Text':
+            snippet_index = self.snippets_model.index(changed_row, changed_column-1)
+            snippet = self.snippets_model.data(snippet_index)
+
+            self._user.snippets[snippet] = item.text()
+            self._user.save()
+
+    def _on_add_snippet_btn_clicked(self):
+        nsd = NewSnippetDialog(self)
+
+        def on_accepted():
+            print('accepted')
+
+        def on_rejected():
+            print('rejected')
+
+        nsd.ui.buttonBox.accepted.connect(on_accepted)
+        nsd.ui.buttonBox.rejected.connect(on_rejected)
+        nsd.show()
+
+    def _on_remove_snippet_btn_clicked(self):
+        print('REMOVE')
+
+    # TODO: changing shortcuts needs to be restricted to acceptable values
+    def _on_shortcuts_model_item_changed(self, item):
+        changed_row = item.index().row()
+        changed_column = item.index().column()
+
+        shortcut_index = self.shortcuts_model.index(changed_row, changed_column-1)
+        shortcut = self.shortcuts_model.data(shortcut_index)
+        self._user.shortcuts[shortcut] = item.text().split(',')
+        self._user.save()
 
     def _on_nw_pos_combo_change(self, index):
         pos = self.ui.nw_pos_combo.itemText(index)
@@ -164,7 +227,7 @@ class NotificationWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(NotificationWindow, self).__init__(parent,
-            Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+            Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint) # Window flags
 
         # ui setup
         self.ui = Ui_NotificationWindow()
