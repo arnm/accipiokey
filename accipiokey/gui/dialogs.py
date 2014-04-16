@@ -14,7 +14,7 @@ class NewSnippetDialog(QDialog):
         self.ui.setupUi(self)
 
         self.ui.buttonBox.accepted.connect(self._on_buttonBox_accepted)
-        self.ui.buttonBox.rejected.connect(self_.on_buttonBox_rejected)
+        self.ui.buttonBox.rejected.connect(self._on_buttonBox_rejected)
 
     def _on_buttonBox_accepted(self):
         pass
