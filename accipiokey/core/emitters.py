@@ -124,10 +124,8 @@ class WordSignalEmitter(QObject):
                 self.last_word, cws))
 
     # TODO: verify this is correct
-    @Slot(list)
-    def on_word_buffer_signal(self, word_buffer):
-
-        word_list = TextBlob(''.join(word_buffer)).words
+    def update(self):
+        word_list = TextBlob(''.join(self.word_buffer)).words
 
         # check words have been typed
         if word_list:
@@ -168,6 +166,10 @@ class WordSignalEmitter(QObject):
 
             self.last_word_signal.emit(self.last_word)
             self.current_word_signal.emit(self.current_word)
+
+    @Slot(list)
+    def on_word_buffer_signal(self, word_buffer):
+        self.update()
 
     @Slot(object)
     def on_key_signal(self, key_signal):
@@ -247,6 +249,9 @@ class CompletionSignalEmitter(QObject):
 
     @Slot(dict)
     def on_shortcut_signal(self, shortcut_signal):
+
+        if not WordSignalEmitter.instance().current_word.strip(): return
+
         if not self.get_shortcut() in shortcut_signal:
             Logger.debug(
                 'CompletionSignalEmitter: Shortcut Not Recognized (%s)',
@@ -401,6 +406,8 @@ class SnippetSignalEmitter(QObject):
     # TODO: currently only works with function key shortcuts (no combos)
     @Slot(dict)
     def on_shortcut_signal(self, shortcut_signal):
+
+        if not WordSignalEmitter.instance().current_word.strip(): return
 
         if not self.get_shortcut() in shortcut_signal:
             Logger.info(

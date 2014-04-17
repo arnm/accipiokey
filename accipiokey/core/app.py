@@ -172,19 +172,19 @@ class AccipioKeyApp(QObject):
     def _on_correction_signal(self, correction_signal):
         KeySignalEmitter.instance().pause()
 
-        wed = WordSignalEmitter.instance()
+        wse = WordSignalEmitter.instance()
 
         # Logger.debug(
         #     'CorrectionSEmitter: Original Word Buffer(%s)',
-        #     wed.word_buffer)
+        #     wse.word_buffer)
 
-        prefix = commonprefix([correction_signal, wed.last_word])
+        prefix = commonprefix([correction_signal, wse.last_word])
 
         Logger.debug(
             'CorrectionSEmitter: Common Prefix (%s)',
             prefix)
 
-        num_deletions = (len(wed.last_word) - len(prefix)) + 1
+        num_deletions = (len(wse.last_word) - len(prefix)) + 1
 
         Logger.debug(
             'CorrectionSEmitter: Deletions To Be Made (%d)',
@@ -193,7 +193,7 @@ class AccipioKeyApp(QObject):
         postfix = correction_signal[len(prefix):]
 
         # remove incorrect word from buffer
-        for _ in range(num_deletions): del wed.word_buffer[-1]
+        for _ in range(num_deletions): del wse.word_buffer[-1]
         # delete external app word
         emulate_key_events(['backspace' for _ in range(num_deletions)])
 
@@ -205,19 +205,14 @@ class AccipioKeyApp(QObject):
             list(completion))
 
         # append new word to word buffer
-        for character in completion: wed.word_buffer.append(character)
+        for character in completion: wse.word_buffer.append(character)
 
         # simulate corrected word keys in external app
         emulate_key_events([character for character in completion])
 
         # Logger.debug(
         #     'CorrectionSEmitter: Corrected Word Buffer(%s)',
-        #     wed.word_buffer)
-
-        Logger.info(
-            'CorrectionSEmitter: Last Word (%s) Current Word (%s)',
-            wed.last_word,
-            wed.current_word)
+        #     wse.word_buffer)
 
         # update statsheet
         self._statsheet.words_corrected += 1
@@ -227,35 +222,40 @@ class AccipioKeyApp(QObject):
 
         KeySignalEmitter.instance().run()
 
+        WordSignalEmitter.instance().update()
+        Logger.info(
+            'CorrectionSEmitter: Last Word (%s) Current Word (%s)',
+            wse.last_word,
+            wse.current_word)
+
     @Slot(str)
     def _on_completion_signal(self, completion_signal):
         KeySignalEmitter.instance().pause()
 
-        wed = WordSignalEmitter.instance()
+        wse = WordSignalEmitter.instance()
 
         # Logger.debug(
         #     'CompletionSignalHandler: Original Word Buffer(%s)',
-        #     wed.word_buffer)
+        #     wse.word_buffer)
 
         # get remaining string of completion
-        postfix = completion_signal[len(wed.current_word):]
+        postfix = completion_signal[len(wse.current_word):] + ' '
+
+        if not postfix.strip():
+            KeySignalEmitter.instance().run()
+            return
 
         Logger.debug('CompletionSignalHandler: Postfix (%s)', postfix)
 
         # append postfix to word buffer
-        for character in postfix: wed.word_buffer.append(character)
+        for character in postfix: wse.word_buffer.append(character)
 
         # simulate postfix keys in external app
         emulate_key_events([character for character in postfix])
 
         # Logger.debug(
         #     'CompletionSignalHandler: Corrected Word Buffer(%s)',
-        #     wed.word_buffer)
-
-        Logger.info(
-            'CompletionSignalHandler: Last Word (%s) Current Word (%s)',
-            wed.last_word,
-            wed.current_word)
+        #     wse.word_buffer)
 
         # update statsheet
         self._statsheet.words_completed += 1
@@ -265,25 +265,30 @@ class AccipioKeyApp(QObject):
 
         KeySignalEmitter.instance().run()
 
-    # TODO: incorporate analytics
+        WordSignalEmitter.instance().update()
+        Logger.info(
+            'CompletionSignalHandler: Last Word (%s) Current Word (%s)',
+            wse.last_word,
+            wse.current_word)
+
+    # TODO: bug when pressed consecutively (WordSignalEmitter bug)
     @Slot(dict)
     def _on_snippet_signal(self, snippet_signal):
         KeySignalEmitter.instance().pause()
 
-        wed = WordSignalEmitter.instance()
-
+        wse = WordSignalEmitter.instance()
         # Logger.debug(
         #     'SnippetSignalHandler: Original Word Buffer(%s)',
-        #     wed.word_buffer)
+        #     wse.word_buffer)
 
-        num_deletions = len(wed.current_word)
+        num_deletions = len(wse.current_word)
 
         Logger.debug(
             'SnippetSignalHandler: Deletions To Be Made (%d)',
             num_deletions)
 
         # remove incorrect word from buffer
-        for _ in range(num_deletions): del wed.word_buffer[-1]
+        for _ in range(num_deletions): del wse.word_buffer[-1]
         # delete external app word
         emulate_key_events(['backspace' for _ in range(num_deletions)])
 
@@ -295,19 +300,14 @@ class AccipioKeyApp(QObject):
             list(correction))
 
         # append new word to word buffer
-        for character in correction: wed.word_buffer.append(character)
+        for character in correction: wse.word_buffer.append(character)
 
         # simulate corrected word keys in external app
         emulate_key_events([character for character in correction])
 
         # Logger.debug(
         #     'SnippetSignalHandler: Corrected Word Buffer(%s)',
-        #     wed.word_buffer)
-
-        Logger.info(
-            'SnippetSignalHandler: Last Word (%s) Current Word (%s)',
-            wed.last_word,
-            wed.current_word)
+        #     wse.word_buffer)
 
         self._statsheet.snippets_used += 1
         self._statsheet.keystrokes_saved += (len(correction) - num_deletions)
@@ -315,6 +315,12 @@ class AccipioKeyApp(QObject):
         self.user_statsheet_updated.emit()
 
         KeySignalEmitter.instance().run()
+
+        WordSignalEmitter.instance().update()
+        Logger.info(
+            'SnippetSignalHandler: Last Word (%s) Current Word (%s)',
+            wse.last_word,
+            wse.current_word)
 
 class AccipioKeyAppController(QApplication):
 
