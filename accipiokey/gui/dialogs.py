@@ -28,11 +28,13 @@ class NewSnippetDialog(QDialog):
         self._update_le()
 
     def _update_le(self):
-        if not self.ui.snippet_le.text().strip():
+        snippet = self.ui.snippet_le.text().strip()
+        text = self.ui.text_le.text().strip()
+        if not snippet:
             self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
             return
 
-        if not self.ui.text_le.text().strip():
+        if not text or len(snippet) > len(text):
             self.ui.buttonBox.button(QDialogButtonBox.Ok).setEnabled(False)
             return
 

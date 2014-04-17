@@ -1,4 +1,5 @@
 from accipiokey.gui.dialogs import *
+from accipiokey.core.documents import *
 from accipiokey.gui.ui.Ui_LoginWindow import Ui_LoginWindow
 from accipiokey.gui.ui.Ui_NotificationWindow import Ui_NotificationWindow
 from accipiokey.gui.ui.Ui_RegisterWindow import Ui_RegisterWindow
@@ -102,6 +103,7 @@ class UserWindow(QMainWindow):
         super(UserWindow, self).__init__(parent)
 
         self._user = user
+        self._statsheet = StatSheet.objects(user=self._user)[0]
 
         # ui setup
         self.ui = Ui_UserWindow()
@@ -109,7 +111,16 @@ class UserWindow(QMainWindow):
 
         self.setWindowTitle(self._user.username)
 
-        # snippets table view
+        # usage table view
+        self.stats_model_headers = ['Category', 'Statistic']
+        self.stats_model = QStandardItemModel()
+        self.stats_model.setHorizontalHeaderLabels(self.stats_model_headers)
+        self.ui.stats_tv.setModel(self.stats_model)
+        self.ui.stats_tv.horizontalHeader().setResizeMode(QHeaderView.Stretch)
+        self.ui.stats_tv.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.update_stats_model()
+
+       # snippets table view
         self.snippets_model_headers = ['Snippet', 'Text']
         self.snippets_model = QStandardItemModel()
         self.snippets_model.setHorizontalHeaderLabels(self.snippets_model_headers)
@@ -140,14 +151,14 @@ class UserWindow(QMainWindow):
         self.ui.toolBar.addAction(self.ui.actionLogout)
 
         self.notification_window = NotificationWindow(user=self._user,
-                                                        parent=self)
+                                                    parent=self)
         self.ui.nw_pos_combo.addItems([
-            NotificationWindow.TOP,
-            NotificationWindow.BOTTOM,
-            NotificationWindow.TOP_LEFT,
-            NotificationWindow.TOP_RIGHT,
-            NotificationWindow.BOTTOM_LEFT,
-            NotificationWindow.BOTTOM_RIGHT
+                NotificationWindow.TOP,
+                NotificationWindow.BOTTOM,
+                NotificationWindow.TOP_LEFT,
+                NotificationWindow.TOP_RIGHT,
+                NotificationWindow.BOTTOM_LEFT,
+                NotificationWindow.BOTTOM_RIGHT
             ])
 
         # center window
@@ -171,6 +182,28 @@ class UserWindow(QMainWindow):
 
         self.ui.nw_pos_combo.currentIndexChanged.connect(
             self._on_nw_pos_combo_change)
+
+    # TODO: not the most efficient way to handle updates
+    def update_stats_model(self):
+        self.stats_model.clear()
+        self.stats_model.setHorizontalHeaderLabels(self.stats_model_headers)
+        self._statsheet = StatSheet.objects(user=self._user)[0]
+
+        self.stats_model.appendRow(
+            [QStandardItem('Words Corrected'),
+            QStandardItem(str(self._statsheet.words_corrected))])
+
+        self.stats_model.appendRow(
+            [QStandardItem('Words Completed'),
+            QStandardItem(str(self._statsheet.words_completed))])
+
+        self.stats_model.appendRow(
+            [QStandardItem('Snippets Used'),
+            QStandardItem(str(self._statsheet.snippets_used))])
+
+        self.stats_model.appendRow(
+            [QStandardItem('Key Strokes Saved'),
+            QStandardItem(str(self._statsheet.keystrokes_saved))])
 
     # TODO: remove hard coded strings
     def _on_snippets_model_item_changed(self, item):
@@ -279,7 +312,6 @@ class NotificationWindow(QMainWindow):
             </p>
             </body>
             </html>''' % (font_size, color, msg)
-
         return rich_text
 
     @Slot(str)

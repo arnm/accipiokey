@@ -9,9 +9,12 @@ from PySide.QtGui import QApplication
 from singleton.singleton import ThreadSafeSingleton
 from textblob import TextBlob
 import mimetypes, os, threading
+from os.path import commonprefix
 
 @ThreadSafeSingleton
 class AccipioKeyApp(QObject):
+
+    user_statsheet_updated = Signal()
 
     @property
     def user(self):
@@ -26,6 +29,7 @@ class AccipioKeyApp(QObject):
 
         # private members
         self._user = None
+        self._statsheet = None
 
         # Handle Emitters
         WordSignalEmitter.instance().indexed_word_signal.connect(
@@ -70,6 +74,13 @@ class AccipioKeyApp(QObject):
             Logger.debug('AccipioKeyApp: Registration Validation Error')
             return False
 
+        statsheet = StatSheet(user=user)
+        statsheet.words_completed = 0
+        statsheet.words_corrected = 0
+        statsheet.snippets_used = 0
+        statsheet.keystrokes_saved = 0
+        statsheet.save()
+
         Logger.debug('AccipioKeyApp: Indexing Default Words for User (%s)', user.username)
         # index default words for new user
         with open(settings.DEFAULT_CORPUS) as corpus:
@@ -95,6 +106,7 @@ class AccipioKeyApp(QObject):
             return False
 
         self._user = users[0]
+        self._statsheet = StatSheet.objects(user=self._user)[0]
         Logger.debug('AccipioKeyApp: Logging In (%s)', self.user.username)
         return True
 
@@ -130,8 +142,9 @@ class AccipioKeyApp(QObject):
             return
 
         Logger.debug('AccipioKeyApp: Logging Out (%s)', self.user.username)
-        KeySignalEmitter.instance().pause()
+        KeySignalEmitter.instance().stop()
         self._user = None
+        self._statsheet = None
 
     def add_writing(self, path):
         if not self.is_logged_in: return False
@@ -165,11 +178,19 @@ class AccipioKeyApp(QObject):
         #     'CorrectionSEmitter: Original Word Buffer(%s)',
         #     wed.word_buffer)
 
-        num_deletions = len(wed.last_word) + 1
+        prefix = commonprefix([correction_signal, wed.last_word])
+
+        Logger.debug(
+            'CorrectionSEmitter: Common Prefix (%s)',
+            prefix)
+
+        num_deletions = (len(wed.last_word) - len(prefix)) + 1
 
         Logger.debug(
             'CorrectionSEmitter: Deletions To Be Made (%d)',
             num_deletions)
+
+        postfix = correction_signal[len(prefix):]
 
         # remove incorrect word from buffer
         for _ in range(num_deletions): del wed.word_buffer[-1]
@@ -177,17 +198,17 @@ class AccipioKeyApp(QObject):
         emulate_key_events(['backspace' for _ in range(num_deletions)])
 
         # add space to corrected word b/c this is invoked after new words
-        correction = correction_signal + ' '
+        completion = postfix + ' '
 
         Logger.info(
             'CorrectionSEmitter: Correction To Be Made (%s)',
-            list(correction))
+            list(completion))
 
         # append new word to word buffer
-        for character in correction: wed.word_buffer.append(character)
+        for character in completion: wed.word_buffer.append(character)
 
         # simulate corrected word keys in external app
-        emulate_key_events([character for character in correction])
+        emulate_key_events([character for character in completion])
 
         # Logger.debug(
         #     'CorrectionSEmitter: Corrected Word Buffer(%s)',
@@ -197,6 +218,12 @@ class AccipioKeyApp(QObject):
             'CorrectionSEmitter: Last Word (%s) Current Word (%s)',
             wed.last_word,
             wed.current_word)
+
+        # update statsheet
+        self._statsheet.words_corrected += 1
+        self._statsheet.keystrokes_saved += (num_deletions + len(postfix))
+        self._statsheet.save()
+        self.user_statsheet_updated.emit()
 
         KeySignalEmitter.instance().run()
 
@@ -230,6 +257,12 @@ class AccipioKeyApp(QObject):
             wed.last_word,
             wed.current_word)
 
+        # update statsheet
+        self._statsheet.words_completed += 1
+        self._statsheet.keystrokes_saved += len(postfix)
+        self._statsheet.save()
+        self.user_statsheet_updated.emit()
+
         KeySignalEmitter.instance().run()
 
     # TODO: incorporate analytics
@@ -255,7 +288,7 @@ class AccipioKeyApp(QObject):
         emulate_key_events(['backspace' for _ in range(num_deletions)])
 
         # add space to corrected word b/c this is invoked after new words
-        correction = snippet_signal.itervalues().next()
+        correction = snippet_signal.itervalues().next() + ' '
 
         Logger.info(
             'SnippetSignalHandler: Correction To Be Made (%s)',
@@ -276,6 +309,11 @@ class AccipioKeyApp(QObject):
             wed.last_word,
             wed.current_word)
 
+        self._statsheet.snippets_used += 1
+        self._statsheet.keystrokes_saved += (len(correction) - num_deletions)
+        self._statsheet.save()
+        self.user_statsheet_updated.emit()
+
         KeySignalEmitter.instance().run()
 
 class AccipioKeyAppController(QApplication):
@@ -286,6 +324,8 @@ class AccipioKeyAppController(QApplication):
         # members
         self._app = AccipioKeyApp.instance()
         self._user_window = None
+
+        self._app.user_statsheet_updated.connect(self._on_user_statsheet_updated)
 
     def exec_(self):
         self._run()
@@ -311,7 +351,6 @@ class AccipioKeyAppController(QApplication):
                 if not self._app.register(credentials['username'], credentials['password']):
                     register_window.ui.statusbar.showMessage('Invalid fields', 3000)
                     return
-
                 register_window.close()
 
             @Slot()
@@ -325,6 +364,10 @@ class AccipioKeyAppController(QApplication):
         login_window.login_signal.connect(on_login_signal)
         login_window.register_signal.connect(on_register_signal)
         login_window.show()
+
+    @Slot()
+    def _on_user_statsheet_updated(self):
+        self._user_window.update_stats_model()
 
     def _init_user_window(self):
         self._user_window = UserWindow(self._app.user)
@@ -352,5 +395,3 @@ class AccipioKeyAppController(QApplication):
         self._user_window.close()
         self._user_window = None
         self._run()
-
-

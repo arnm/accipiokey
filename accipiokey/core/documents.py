@@ -10,8 +10,8 @@ class User(Document):
 class StatSheet(Document):
     user = ReferenceField(User, reverse_delete_rule=CASCADE)
     words_corrected = IntField(min_value=0)
-    words_generated = IntField(min_value=0)
     words_completed = IntField(min_value=0)
+    snippets_used = IntField(min_value=0)
     keystrokes_saved = IntField(min_value=0)
 
 # TODO: this might be incorrect

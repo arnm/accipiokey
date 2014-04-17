@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file './ui/Ui_NewSnippetDialog.ui'
 #
-# Created: Wed Apr 16 13:12:48 2014
+# Created: Wed Apr 16 19:10:53 2014
 #      by: pyside-uic 0.2.15 running on PySide 1.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -37,6 +37,8 @@ class Ui_NewSnippetDialog(object):
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("accepted()"), NewSnippetDialog.accept)
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL("rejected()"), NewSnippetDialog.reject)
         QtCore.QMetaObject.connectSlotsByName(NewSnippetDialog)
+        NewSnippetDialog.setTabOrder(self.snippet_le, self.text_le)
+        NewSnippetDialog.setTabOrder(self.text_le, self.buttonBox)
 
     def retranslateUi(self, NewSnippetDialog):
         NewSnippetDialog.setWindowTitle(QtGui.QApplication.translate("NewSnippetDialog", "Dialog", None, QtGui.QApplication.UnicodeUTF8))
