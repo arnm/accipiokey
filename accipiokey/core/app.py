@@ -1,15 +1,15 @@
 from accipiokey.core.apputils import emulate_key_events
-from accipiokey.core.esutils import index_new_words
 from accipiokey.core.documents import *
 from accipiokey.core.emitters import *
+from accipiokey.core.esutils import index_new_words
 from accipiokey.gui.windows import *
 from mongoengine.errors import ValidationError
+from os.path import commonprefix
 from PySide.QtCore import Slot
 from PySide.QtGui import QApplication
 from singleton.singleton import ThreadSafeSingleton
 from textblob import TextBlob
 import mimetypes, os, threading
-from os.path import commonprefix
 
 @ThreadSafeSingleton
 class AccipioKeyApp(QObject):
@@ -74,6 +74,7 @@ class AccipioKeyApp(QObject):
             Logger.debug('AccipioKeyApp: Registration Validation Error')
             return False
 
+        # create new user statsheet
         statsheet = StatSheet(user=user)
         statsheet.words_completed = 0
         statsheet.words_corrected = 0
@@ -153,7 +154,7 @@ class AccipioKeyApp(QObject):
         with open(path, 'r') as f:
             title = os.path.splitext(os.path.basename(path))
             content = f.read()
-            writing = Writing(title=title, content=content)
+            writing = Writing(user=self._user, title=title, content=content)
             writing.save()
             self._process_writing(writing)
         return True

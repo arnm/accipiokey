@@ -9,8 +9,8 @@ from PySide.QtCore import QObject, Signal, Slot
 from select import select
 from singleton.singleton import ThreadSafeSingleton
 from textblob import TextBlob, Word
-import threading
 from time import clock, sleep
+import threading
 
 
 @ThreadSafeSingleton

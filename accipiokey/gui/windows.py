@@ -386,6 +386,3 @@ class NotificationWindow(QMainWindow):
         r.moveRight(ag.right())
         r.moveTop(ag.top())
         self.setGeometry(r)
-
-
-
