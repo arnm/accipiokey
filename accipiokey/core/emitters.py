@@ -112,7 +112,6 @@ class WordSignalEmitter(QObject):
     def __init__(self, **kwargs):
         QObject.__init__(self, **kwargs)
 
-        self._word_delimiter_pressed = False
         self._backspace_pressed = False
 
         KeySignalEmitter.instance().key_signal.connect(self.on_key_signal)
@@ -129,6 +128,19 @@ class WordSignalEmitter(QObject):
 
         # check words have been typed
         if word_list:
+
+            # check if whitespace was entered last
+            if not self.word_buffer[-1].strip():
+                self.last_word = word_list[-1]
+                self.current_word = ''
+
+                self.last_word_signal.emit(self.last_word)
+                self.current_word_signal.emit(self.current_word)
+
+                if check_if_indexed(self.user, self.last_word):
+                    self.indexed_word_signal.emit(self.last_word)
+                return
+
             # if backspace was pressed and last key typed was whitespace
             if self._backspace_pressed and not self.word_buffer[-1].strip():
                 self.last_word = word_list[-1]
@@ -137,19 +149,6 @@ class WordSignalEmitter(QObject):
 
                 self.last_word_signal.emit(self.last_word)
                 self.current_word_signal.emit(self.current_word)
-                return
-
-            # TODO: first word typed in buffer does not emitt indexed signal
-            if self._word_delimiter_pressed:
-                self.last_word = word_list[-1]
-                self.current_word = ''
-                self._word_delimiter_pressed = False
-
-                self.last_word_signal.emit(self.last_word)
-                self.current_word_signal.emit(self.current_word)
-
-                if check_if_indexed(self.user, self.last_word):
-                    self.indexed_word_signal.emit(self.last_word)
                 return
 
             # append current key to current word
@@ -183,15 +182,12 @@ class WordSignalEmitter(QObject):
                 self.word_buffer.append(string)
                 self.word_buffer_signal.emit(self.word_buffer)
             elif string == 'space':
-                self._word_delimiter_pressed = True
                 self.word_buffer.append(' ')
                 self.word_buffer_signal.emit(self.word_buffer)
             elif string == 'enter':
-                self._word_delimiter_pressed = True
                 self.word_buffer.append(' ')
                 self.word_buffer_signal.emit(self.word_buffer)
             elif string == 'tab':
-                self._word_delimiter_pressed = True
                 self.word_buffer.append(' ')
                 self.word_buffer_signal.emit(self.word_buffer)
             elif string == 'backspace':
@@ -272,6 +268,11 @@ class CompletionSignalEmitter(QObject):
 
     @Slot(str)
     def on_current_word_signal(self, word_signal):
+
+        if not word_signal.strip():
+            self._possible_completion = ''
+            self.possible_completion_signal.emit(self._possible_completion)
+            return
 
         suggestion_name = 'completion_suggestion'
         compl_resp = get_es().suggest(index=WordMappingType.get_index(),
