@@ -1,5 +1,6 @@
 from accipiokey.gui.dialogs import *
 from accipiokey.core.documents import *
+from accipiokey.gui.delegates import *
 from accipiokey.gui.ui.Ui_LoginWindow import Ui_LoginWindow
 from accipiokey.gui.ui.Ui_NotificationWindow import Ui_NotificationWindow
 from accipiokey.gui.ui.Ui_RegisterWindow import Ui_RegisterWindow
@@ -137,6 +138,7 @@ class UserWindow(QMainWindow):
         self.shortcuts_model.setHorizontalHeaderLabels(self.shortcuts_model_headers)
         self.ui.shortcuts_tv.setModel(self.shortcuts_model)
         self.ui.shortcuts_tv.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.ui.shortcuts_tv.setItemDelegate(QKeySequenceEditDelegate())
 
         for shortcut, binding in self._user.shortcuts.items():
             shortcut_item = QStandardItem(shortcut)
@@ -246,7 +248,6 @@ class UserWindow(QMainWindow):
         nsd.ui.buttonBox.accepted.connect(on_accepted)
         nsd.show()
 
-    # TODO: working on this
     def _on_remove_snippet_btn_clicked(self):
         indexes = self.ui.snippets_tv.selectionModel().selection().indexes()
         for index in indexes:

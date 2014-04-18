@@ -65,7 +65,13 @@ class KeySignalEmitter(QObject):
 @ThreadSafeSingleton
 class KeyboardStateSignalEmitter(QObject):
 
+    key_down_signal = pyqtSignal(str)
+    key_up_signal = pyqtSignal(str)
     keyboard_state_signal = pyqtSignal(dict)
+
+    @property
+    def keyboard_state(self):
+        return self._keyboard_state
 
     def __init__(self, parent=None):
         QObject.__init__(self, parent)
@@ -90,10 +96,12 @@ class KeyboardStateSignalEmitter(QObject):
             if keycode not in self._keyboard_state:
                 self._keyboard_state[keycode] = timestamp
                 self.keyboard_state_signal.emit(self._keyboard_state)
+            self.key_down_signal.emit(keycode_to_unicode(keycode))
         elif keystate == KeyEvent.key_up:
             if keycode in self._keyboard_state:
                 del self._keyboard_state[keycode]
                 self.keyboard_state_signal.emit(self._keyboard_state)
+            self.key_up_signal.emit(keycode_to_unicode(keycode))
 
 @ThreadSafeSingleton
 class WordSignalEmitter(QObject):
@@ -114,7 +122,7 @@ class WordSignalEmitter(QObject):
 
         self._backspace_pressed = False
 
-        KeySignalEmitter.instance().key_signal.connect(self.on_key_signal)
+        KeyboardStateSignalEmitter.instance().key_down_signal.connect(self.on_key_down_signal)
         self.word_buffer_signal.connect(self.on_word_buffer_signal)
 
         self.current_word_signal.connect(lambda cws:
@@ -170,31 +178,35 @@ class WordSignalEmitter(QObject):
     def on_word_buffer_signal(self, word_buffer):
         self.update()
 
-    @pyqtSlot(object)
-    def on_key_signal(self, key_signal):
+    @pyqtSlot(str)
+    def on_key_down_signal(self, key_down_signal):
+        keyboard_state = KeyboardStateSignalEmitter.instance().keyboard_state
 
-        keycode = key_signal.keycode
-        keystate = key_signal.keystate
+        # TODO: create/use constants
+        if 'KEY_LEFTALT' in keyboard_state: return
+        if 'KEY_RIGHTALT' in keyboard_state: return
+        if 'KEY_LEFTCTRL' in keyboard_state: return
+        if 'KEY_RIGHTCTRL' in keyboard_state: return
 
-        if keystate == KeyEvent.key_down or keystate == KeyEvent.key_hold:
-            string = keycode_to_unicode(keycode)
-            if len(string) == 1:
-                self.word_buffer.append(string)
+        # TODO: create/find constants
+        key_down_signal = keycode_to_unicode(key_down_signal)
+        if len(key_down_signal) == 1:
+            self.word_buffer.append(key_down_signal)
+            self.word_buffer_signal.emit(self.word_buffer)
+        elif key_down_signal == 'space':
+            self.word_buffer.append(' ')
+            self.word_buffer_signal.emit(self.word_buffer)
+        elif key_down_signal == 'enter':
+            self.word_buffer.append(' ')
+            self.word_buffer_signal.emit(self.word_buffer)
+        elif key_down_signal == 'tab':
+            self.word_buffer.append(' ')
+            self.word_buffer_signal.emit(self.word_buffer)
+        elif key_down_signal == 'backspace':
+            if self.word_buffer:
+                self._backspace_pressed = True
+                self.word_buffer.pop()
                 self.word_buffer_signal.emit(self.word_buffer)
-            elif string == 'space':
-                self.word_buffer.append(' ')
-                self.word_buffer_signal.emit(self.word_buffer)
-            elif string == 'enter':
-                self.word_buffer.append(' ')
-                self.word_buffer_signal.emit(self.word_buffer)
-            elif string == 'tab':
-                self.word_buffer.append(' ')
-                self.word_buffer_signal.emit(self.word_buffer)
-            elif string == 'backspace':
-                if self.word_buffer:
-                    self._backspace_pressed = True
-                    self.word_buffer.pop()
-                    self.word_buffer_signal.emit(self.word_buffer)
 
 # TODO: review this
 @ThreadSafeSingleton
@@ -210,12 +222,12 @@ class ShortcutSignalEmitter(QObject):
             self.on_keyboard_state_signal)
 
         self.shortcut_signal.connect(lambda ss:
-            Logger.info('ShortcutEventDispatcher: Shortcut Event(%s)', ss))
+            Logger.info('ShortcutSignalEmitter: Shortcut Event(%s)', ss))
 
     @pyqtSlot(dict)
     def on_keyboard_state_signal(self, keyboard_state_signal):
-        for name, shortcut in self.user.shortcuts.iteritems():
-            if keyboard_state_signal.keys() == shortcut:
+        for name, shortcut in self.user.shortcuts.items():
+            if sorted(keyboard_state_signal.keys()) == sorted(shortcut):
                 self.shortcut_signal.emit({name: shortcut})
                 break
 
@@ -404,7 +416,6 @@ class SnippetSignalEmitter(QObject):
         self.snippet_signal.connect(lambda ss:
             Logger.info('SnippetSignalEmitter: Snippet Signal (%s)', ss))
 
-    # TODO: currently only works with function key shortcuts (no combos)
     @pyqtSlot(dict)
     def on_shortcut_signal(self, shortcut_signal):
 
@@ -420,7 +431,6 @@ class SnippetSignalEmitter(QObject):
             'SnippetSignalEmitter: Shortcut Recognized (%s)',
             shortcut_signal)
 
-        # TODO: this is where the extra key gets tack on if its a letter
         snippet = str(WordSignalEmitter.instance().current_word)
 
         if not snippet in self.user.snippets:

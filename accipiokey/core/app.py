@@ -60,13 +60,14 @@ class AccipioKeyApp(QObject):
 
         Logger.info('AccipioKeyApp: Registering (%s)', username)
         # setup default user in DB
+        # TODO: create/use constants
         try:
             user = User(
                 username=username,
                 password=password,
                 shortcuts={
-                    'completion': ['KEY_LEFTALT'],
-                    'snippet': ['KEY_RIGHTALT']
+                    'completion': ['KEY_LEFTCTRL', 'KEY_C'],
+                    'snippet': ['KEY_LEFTCTRL', 'KEY_E']
                 },
                 snippets={'lol': 'laugh out loud'}).save()
         except ValidationError:
@@ -124,7 +125,6 @@ class AccipioKeyApp(QObject):
         self._init_emitters()
         KeySignalEmitter.instance().run()
 
-    # TODO: this doesn't really stop recording of keys
     def stop(self):
         if not self.is_logged_in:
             Logger.debug('AccipioKeyApp: Not Logged In')
@@ -168,7 +168,6 @@ class AccipioKeyApp(QObject):
     def _on_indexed_word_signal(self, indexed_word_signal):
         Logger.debug('IndexedWordSignalHandler: (%s)', indexed_word_signal)
 
-    # TODO: incorporate user analytics
     @pyqtSlot(str)
     def _on_correction_signal(self, correction_signal):
         KeySignalEmitter.instance().pause()
@@ -272,7 +271,6 @@ class AccipioKeyApp(QObject):
             wse.last_word,
             wse.current_word)
 
-    # TODO: bug when pressed consecutively (WordSignalEmitter bug)
     @pyqtSlot(dict)
     def _on_snippet_signal(self, snippet_signal):
         KeySignalEmitter.instance().pause()

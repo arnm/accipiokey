@@ -9,9 +9,12 @@ def keycode_to_unicode(keycode): return keycode.replace('KEY_', '').lower()
 def unicode_to_keycode(unicode):
     if unicode == ' ':
         return 'KEY_' + 'space'.upper()
+    if unicode == 'Alt':
+        return 'KEY_RIGHTALT'
+    if unicode == 'Ctrl':
+        return 'KEY_LEFTCTRL'
     return 'KEY_' + unicode.upper()
 
-# TODO: fix this hack
 # TODO: could be more efficient (UInput could remain open)
 def emulate_key_events(unicodes):
     with UInput() as uinput:
