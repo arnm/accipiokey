@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file './ui/Ui_UserWindow.ui'
 #
-# Created: Fri Apr 18 10:16:45 2014
+# Created: Fri Apr 18 15:26:20 2014
 #      by: PyQt5 UI code generator 5.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_UserWindow(object):
     def setupUi(self, UserWindow):
         UserWindow.setObjectName("UserWindow")
-        UserWindow.resize(410, 526)
+        UserWindow.resize(410, 525)
         self.centralwidget = QtWidgets.QWidget(UserWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
@@ -45,12 +45,14 @@ class Ui_UserWindow(object):
         self.snippets_tv = QtWidgets.QTableView(self.snippets_gb)
         self.snippets_tv.setObjectName("snippets_tv")
         self.gridLayout_6.addWidget(self.snippets_tv, 0, 0, 1, 3)
-        self.add_snippet_btn = QtWidgets.QPushButton(self.snippets_gb)
-        self.add_snippet_btn.setObjectName("add_snippet_btn")
-        self.gridLayout_6.addWidget(self.add_snippet_btn, 1, 2, 1, 1)
         self.remove_snippet_btn = QtWidgets.QPushButton(self.snippets_gb)
+        self.remove_snippet_btn.setText("")
         self.remove_snippet_btn.setObjectName("remove_snippet_btn")
         self.gridLayout_6.addWidget(self.remove_snippet_btn, 1, 1, 1, 1)
+        self.add_snippet_btn = QtWidgets.QPushButton(self.snippets_gb)
+        self.add_snippet_btn.setText("")
+        self.add_snippet_btn.setObjectName("add_snippet_btn")
+        self.gridLayout_6.addWidget(self.add_snippet_btn, 1, 2, 1, 1)
         self.gridLayout_3.addWidget(self.snippets_gb, 3, 0, 1, 2)
         self.shortcuts_gb = QtWidgets.QGroupBox(self.settings_tab)
         self.shortcuts_gb.setObjectName("shortcuts_gb")
@@ -92,6 +94,9 @@ class Ui_UserWindow(object):
         UserWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
         self.actionLogout = QtWidgets.QAction(UserWindow)
         self.actionLogout.setObjectName("actionLogout")
+        self.actionToggleAppState = QtWidgets.QAction(UserWindow)
+        self.actionToggleAppState.setCheckable(True)
+        self.actionToggleAppState.setObjectName("actionToggleAppState")
 
         self.retranslateUi(UserWindow)
         self.main_tw.setCurrentIndex(0)
@@ -107,8 +112,6 @@ class Ui_UserWindow(object):
         self.improve_btn.setText(_translate("UserWindow", "Improve..."))
         self.main_tw.setTabText(self.main_tw.indexOf(self.stats_tab), _translate("UserWindow", "Usage Stats"))
         self.snippets_gb.setTitle(_translate("UserWindow", "Snippets"))
-        self.add_snippet_btn.setText(_translate("UserWindow", "Add"))
-        self.remove_snippet_btn.setText(_translate("UserWindow", "Remove"))
         self.shortcuts_gb.setTitle(_translate("UserWindow", "Shortcuts"))
         self.general_gb.setTitle(_translate("UserWindow", "General"))
         self.label.setText(_translate("UserWindow", "Notifications"))
@@ -117,4 +120,6 @@ class Ui_UserWindow(object):
         self.toolBar.setWindowTitle(_translate("UserWindow", "toolBar"))
         self.actionLogout.setText(_translate("UserWindow", "Log Out"))
         self.actionLogout.setToolTip(_translate("UserWindow", "Log Out"))
+        self.actionToggleAppState.setText(_translate("UserWindow", "ToggleAppState"))
+        self.actionToggleAppState.setToolTip(_translate("UserWindow", "Start/Stop"))
 

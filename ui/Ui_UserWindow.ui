@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>410</width>
-    <height>526</height>
+    <height>525</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -77,17 +77,17 @@
            <item row="0" column="0" colspan="3">
             <widget class="QTableView" name="snippets_tv"/>
            </item>
-           <item row="1" column="2">
-            <widget class="QPushButton" name="add_snippet_btn">
-             <property name="text">
-              <string>Add</string>
-             </property>
-            </widget>
-           </item>
            <item row="1" column="1">
             <widget class="QPushButton" name="remove_snippet_btn">
              <property name="text">
-              <string>Remove</string>
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QPushButton" name="add_snippet_btn">
+             <property name="text">
+              <string/>
              </property>
             </widget>
            </item>
@@ -172,6 +172,17 @@
    </property>
    <property name="toolTip">
     <string>Log Out</string>
+   </property>
+  </action>
+  <action name="actionToggleAppState">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ToggleAppState</string>
+   </property>
+   <property name="toolTip">
+    <string>Start/Stop</string>
    </property>
   </action>
  </widget>

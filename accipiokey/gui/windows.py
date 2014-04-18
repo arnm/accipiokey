@@ -147,11 +147,19 @@ class UserWindow(QMainWindow):
             self.shortcuts_model.appendRow([shortcut_item, binding_item])
 
         # toolbar setup
-        self.ui.app_state_toggle_btn = QPushButton()
-        self.ui.app_state_toggle_btn.setText('On')
-        self.ui.app_state_toggle_btn.setCheckable(True)
-        self.ui.toolBar.addWidget(self.ui.app_state_toggle_btn)
+        self.ui.toolBar.addAction(self.ui.actionToggleAppState)
         self.ui.toolBar.addAction(self.ui.actionLogout)
+
+        # center window
+        r = self.geometry()
+        r.moveCenter(QApplication.desktop().availableGeometry().center())
+        self.setGeometry(r)
+
+        self.ui.actionToggleAppState.setIcon(QIcon('ui/icons/play.png'))
+        self.ui.actionLogout.setIcon(QIcon('ui/icons/cross.png'))
+        self.ui.improve_btn.setIcon(QIcon('ui/icons/add-text.png'))
+        self.ui.add_snippet_btn.setIcon(QIcon('ui/icons/plus.png'))
+        self.ui.remove_snippet_btn.setIcon(QIcon('ui/icons/minus.png'))
 
         self.notification_window = NotificationWindow(user=self._user,
                                                     parent=self)
@@ -164,12 +172,9 @@ class UserWindow(QMainWindow):
                 NotificationWindow.BOTTOM_RIGHT
             ])
 
-        # center window
-        r = self.geometry()
-        r.moveCenter(QApplication.desktop().availableGeometry().center())
-        self.setGeometry(r)
-
         # signal handling
+        self.ui.actionToggleAppState.toggled.connect(
+            self._on_action_toggle_app_state_toggled)
 
         self.snippets_model.itemChanged.connect(
             self._on_snippets_model_item_changed)
@@ -185,6 +190,12 @@ class UserWindow(QMainWindow):
 
         self.ui.nw_pos_combo.currentIndexChanged.connect(
             self._on_nw_pos_combo_change)
+
+    def _on_action_toggle_app_state_toggled(self, checked):
+        if not checked:
+            self.ui.actionToggleAppState.setIcon(QIcon('ui/icons/play.png'))
+            return
+        self.ui.actionToggleAppState.setIcon(QIcon('ui/icons/stop.png'))
 
     # TODO: not the most efficient way to handle updates
     def update_stats_model(self):

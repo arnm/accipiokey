@@ -1,5 +1,5 @@
 from PyQt5.QtCore import *
-from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import *
 from accipiokey.gui.ui.Ui_NewSnippetDialog import Ui_NewSnippetDialog
 
 

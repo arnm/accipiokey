@@ -378,22 +378,18 @@ class AccipioKeyAppController(QApplication):
         self._user_window = UserWindow(self._app.user)
 
         # signals
-        self._user_window.ui.app_state_toggle_btn.toggled.connect(
-            self._on_app_state_toggle_btn_toggle)
+        self._user_window.ui.actionToggleAppState.toggled.connect(
+            self._on_action_toggle_app_state_toggled)
         self._user_window.ui.actionLogout.triggered.connect(self._on_app_logout)
 
         self._user_window.show()
 
     @pyqtSlot(int)
-    def _on_app_state_toggle_btn_toggle(self, checked):
-
+    def _on_action_toggle_app_state_toggled(self, checked):
         if not checked:
             self._app.stop()
-            self._user_window.notification_window.close()
             return
-
         self._app.start()
-        self._user_window.notification_window.show()
 
     def _on_app_logout(self):
         self._app.logout()
