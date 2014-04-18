@@ -5,7 +5,7 @@ from accipiokey.core.mappings import WordMappingType
 from datetime import datetime
 from elasticutils import S, get_es
 from evdev import InputDevice, categorize, ecodes, KeyEvent
-from PySide.QtCore import QObject, Signal, Slot
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from select import select
 from singleton.singleton import ThreadSafeSingleton
 from textblob import TextBlob, Word
@@ -16,7 +16,7 @@ import threading
 @ThreadSafeSingleton
 class KeySignalEmitter(QObject):
 
-    key_signal = Signal(object)
+    key_signal = pyqtSignal(object)
 
     def __init__(self, parent=None):
         QObject.__init__(self, parent)
@@ -65,7 +65,7 @@ class KeySignalEmitter(QObject):
 @ThreadSafeSingleton
 class KeyboardStateSignalEmitter(QObject):
 
-    keyboard_state_signal = Signal(dict)
+    keyboard_state_signal = pyqtSignal(dict)
 
     def __init__(self, parent=None):
         QObject.__init__(self, parent)
@@ -80,7 +80,7 @@ class KeyboardStateSignalEmitter(QObject):
         #     lambda kbs: Logger.debug(
         #         'KeyBoardStateSignalEmitter: Keyboard State (%s)', kbs))
 
-    @Slot(object)
+    @pyqtSlot(object)
     def on_key_signal(self, key_signal):
         keycode = key_signal.keycode
         keystate = key_signal.keystate
@@ -98,10 +98,10 @@ class KeyboardStateSignalEmitter(QObject):
 @ThreadSafeSingleton
 class WordSignalEmitter(QObject):
 
-    current_word_signal = Signal(str)
-    last_word_signal = Signal(str)
-    word_buffer_signal = Signal(list)
-    indexed_word_signal = Signal(str)
+    current_word_signal = pyqtSignal(str)
+    last_word_signal = pyqtSignal(str)
+    word_buffer_signal = pyqtSignal(list)
+    indexed_word_signal = pyqtSignal(str)
     user = None
 
     # TODO: check if these need to be exposed
@@ -166,11 +166,11 @@ class WordSignalEmitter(QObject):
             self.last_word_signal.emit(self.last_word)
             self.current_word_signal.emit(self.current_word)
 
-    @Slot(list)
+    @pyqtSlot(list)
     def on_word_buffer_signal(self, word_buffer):
         self.update()
 
-    @Slot(object)
+    @pyqtSlot(object)
     def on_key_signal(self, key_signal):
 
         keycode = key_signal.keycode
@@ -193,14 +193,14 @@ class WordSignalEmitter(QObject):
             elif string == 'backspace':
                 if self.word_buffer:
                     self._backspace_pressed = True
-                    del self.word_buffer[-1]
+                    self.word_buffer.pop()
                     self.word_buffer_signal.emit(self.word_buffer)
 
 # TODO: review this
 @ThreadSafeSingleton
 class ShortcutSignalEmitter(QObject):
 
-    shortcut_signal = Signal(dict)
+    shortcut_signal = pyqtSignal(dict)
     user = None
 
     def __init__(self, **kwargs):
@@ -212,7 +212,7 @@ class ShortcutSignalEmitter(QObject):
         self.shortcut_signal.connect(lambda ss:
             Logger.info('ShortcutEventDispatcher: Shortcut Event(%s)', ss))
 
-    @Slot(dict)
+    @pyqtSlot(dict)
     def on_keyboard_state_signal(self, keyboard_state_signal):
         for name, shortcut in self.user.shortcuts.iteritems():
             if keyboard_state_signal.keys() == shortcut:
@@ -222,8 +222,8 @@ class ShortcutSignalEmitter(QObject):
 @ThreadSafeSingleton
 class CompletionSignalEmitter(QObject):
 
-    completion_signal = Signal(str)
-    possible_completion_signal = Signal(str)
+    completion_signal = pyqtSignal(str)
+    possible_completion_signal = pyqtSignal(str)
 
     @classmethod
     def get_shortcut(cls):
@@ -243,7 +243,7 @@ class CompletionSignalEmitter(QObject):
             Logger.info(
                 'CompletionSignalEmitter: Completion Signal (%s)', cs))
 
-    @Slot(dict)
+    @pyqtSlot(dict)
     def on_shortcut_signal(self, shortcut_signal):
 
         if not WordSignalEmitter.instance().current_word.strip(): return
@@ -266,7 +266,7 @@ class CompletionSignalEmitter(QObject):
 
         self.completion_signal.emit(self._possible_completion)
 
-    @Slot(str)
+    @pyqtSlot(str)
     def on_current_word_signal(self, word_signal):
 
         if not word_signal.strip():
@@ -303,8 +303,8 @@ class CompletionSignalEmitter(QObject):
 @ThreadSafeSingleton
 class CorrectionSignalEmitter(QObject):
 
-    correction_signal = Signal(str)
-    possible_correction_signal = Signal(str)
+    correction_signal = pyqtSignal(str)
+    possible_correction_signal = pyqtSignal(str)
     user = None
 
     def __init__(self, parent=None):
@@ -320,7 +320,7 @@ class CorrectionSignalEmitter(QObject):
             Logger.info(
                 'CorrectionSignalEmitter: Correction Signal (%s)', cs))
 
-    @Slot(str)
+    @pyqtSlot(str)
     def on_current_word_signal(self, current_word_signal):
         # check if last word is blank
         if not current_word_signal:
@@ -355,7 +355,7 @@ class CorrectionSignalEmitter(QObject):
         top_suggestion = suggestions[0]['text']
         self.possible_correction_signal.emit(top_suggestion)
 
-    @Slot(str)
+    @pyqtSlot(str)
     def on_last_word_signal(self, last_word_signal):
         # check if last word is blank
         if not last_word_signal: return
@@ -388,7 +388,7 @@ class CorrectionSignalEmitter(QObject):
 @ThreadSafeSingleton
 class SnippetSignalEmitter(QObject):
 
-    snippet_signal = Signal(dict)
+    snippet_signal = pyqtSignal(dict)
     user = None
 
     @classmethod
@@ -405,7 +405,7 @@ class SnippetSignalEmitter(QObject):
             Logger.info('SnippetSignalEmitter: Snippet Signal (%s)', ss))
 
     # TODO: currently only works with function key shortcuts (no combos)
-    @Slot(dict)
+    @pyqtSlot(dict)
     def on_shortcut_signal(self, shortcut_signal):
 
         if not WordSignalEmitter.instance().current_word.strip(): return

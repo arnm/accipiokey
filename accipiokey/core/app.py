@@ -5,8 +5,8 @@ from accipiokey.core.esutils import index_new_words
 from accipiokey.gui.windows import *
 from mongoengine.errors import ValidationError
 from os.path import commonprefix
-from PySide.QtCore import Slot
-from PySide.QtGui import QApplication
+from PyQt5.QtCore import pyqtSlot, pyqtSignal
+from PyQt5.QtWidgets import QApplication
 from singleton.singleton import ThreadSafeSingleton
 from textblob import TextBlob
 import mimetypes, os, threading
@@ -14,7 +14,7 @@ import mimetypes, os, threading
 @ThreadSafeSingleton
 class AccipioKeyApp(QObject):
 
-    user_statsheet_updated = Signal()
+    user_statsheet_updated = pyqtSignal()
 
     @property
     def user(self):
@@ -164,12 +164,12 @@ class AccipioKeyApp(QObject):
         pass
 
     # TODO: implement
-    @Slot(str)
+    @pyqtSlot(str)
     def _on_indexed_word_signal(self, indexed_word_signal):
         Logger.debug('IndexedWordSignalHandler: (%s)', indexed_word_signal)
 
     # TODO: incorporate user analytics
-    @Slot(str)
+    @pyqtSlot(str)
     def _on_correction_signal(self, correction_signal):
         KeySignalEmitter.instance().pause()
 
@@ -229,7 +229,7 @@ class AccipioKeyApp(QObject):
             wse.last_word,
             wse.current_word)
 
-    @Slot(str)
+    @pyqtSlot(str)
     def _on_completion_signal(self, completion_signal):
         KeySignalEmitter.instance().pause()
 
@@ -273,7 +273,7 @@ class AccipioKeyApp(QObject):
             wse.current_word)
 
     # TODO: bug when pressed consecutively (WordSignalEmitter bug)
-    @Slot(dict)
+    @pyqtSlot(dict)
     def _on_snippet_signal(self, snippet_signal):
         KeySignalEmitter.instance().pause()
 
@@ -341,7 +341,7 @@ class AccipioKeyAppController(QApplication):
     def _run(self):
         login_window = LoginWindow()
 
-        @Slot(dict)
+        @pyqtSlot(dict)
         def on_login_signal(credentials):
             if not self._app.login(credentials['username'],credentials['password']):
                 login_window.ui.statusbar.showMessage('Invalid credentials', 3000)
@@ -349,18 +349,18 @@ class AccipioKeyAppController(QApplication):
             login_window.close()
             self._init_user_window()
 
-        @Slot()
+        @pyqtSlot()
         def on_register_signal():
             register_window = RegisterWindow(login_window)
 
-            @Slot(dict)
+            @pyqtSlot(dict)
             def on_register_signal(credentials):
                 if not self._app.register(credentials['username'], credentials['password']):
                     register_window.ui.statusbar.showMessage('Invalid fields', 3000)
                     return
                 register_window.close()
 
-            @Slot()
+            @pyqtSlot()
             def on_cancel_signal():
                 register_window.close()
 
@@ -372,7 +372,7 @@ class AccipioKeyAppController(QApplication):
         login_window.register_signal.connect(on_register_signal)
         login_window.show()
 
-    @Slot()
+    @pyqtSlot()
     def _on_user_statsheet_updated(self):
         self._user_window.update_stats_model()
 
@@ -386,7 +386,7 @@ class AccipioKeyAppController(QApplication):
 
         self._user_window.show()
 
-    @Slot(int)
+    @pyqtSlot(int)
     def _on_app_state_toggle_btn_toggle(self, checked):
 
         if not checked:

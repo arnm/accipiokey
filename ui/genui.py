@@ -9,4 +9,4 @@ for file in files:
     if '.ui' in file:
         print('File:', file)
         name = os.path.splitext(file)[0]
-        call(['pyside-uic', ui_dir + file, '-o', output_dir + name + '.py'])
+        call(['python2-pyuic5', ui_dir + file, '-o', output_dir + name + '.py'])

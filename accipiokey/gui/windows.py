@@ -7,13 +7,14 @@ from accipiokey.gui.ui.Ui_UserWindow import Ui_UserWindow
 from accipiokey.core.emitters import *
 from accipiokey.core.logger import Logger
 from itertools import izip
-from PySide.QtCore import *
-from PySide.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
 
 class LoginWindow(QMainWindow):
 
-    login_signal = Signal(dict)
-    register_signal = Signal()
+    login_signal = pyqtSignal(dict)
+    register_signal = pyqtSignal()
 
     def __init__(self, parent=None):
         super(LoginWindow, self).__init__(parent)
@@ -58,8 +59,8 @@ class LoginWindow(QMainWindow):
 
 class RegisterWindow(QMainWindow):
 
-    register_signal = Signal(dict)
-    cancel_signal = Signal()
+    register_signal = pyqtSignal(dict)
+    cancel_signal = pyqtSignal()
 
     def __init__(self, parent=None):
         super(RegisterWindow, self).__init__(parent)
@@ -116,7 +117,7 @@ class UserWindow(QMainWindow):
         self.stats_model = QStandardItemModel()
         self.stats_model.setHorizontalHeaderLabels(self.stats_model_headers)
         self.ui.stats_tv.setModel(self.stats_model)
-        self.ui.stats_tv.horizontalHeader().setResizeMode(QHeaderView.Stretch)
+        self.ui.stats_tv.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.ui.stats_tv.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.update_stats_model()
 
@@ -125,7 +126,7 @@ class UserWindow(QMainWindow):
         self.snippets_model = QStandardItemModel()
         self.snippets_model.setHorizontalHeaderLabels(self.snippets_model_headers)
         self.ui.snippets_tv.setModel(self.snippets_model)
-        self.ui.snippets_tv.horizontalHeader().setResizeMode(QHeaderView.Stretch)
+        self.ui.snippets_tv.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         for snippet, text in self._user.snippets.items():
             self.snippets_model.appendRow([QStandardItem(snippet), QStandardItem(text)])
@@ -135,7 +136,7 @@ class UserWindow(QMainWindow):
         self.shortcuts_model = QStandardItemModel()
         self.shortcuts_model.setHorizontalHeaderLabels(self.shortcuts_model_headers)
         self.ui.shortcuts_tv.setModel(self.shortcuts_model)
-        self.ui.shortcuts_tv.horizontalHeader().setResizeMode(QHeaderView.Stretch)
+        self.ui.shortcuts_tv.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         for shortcut, binding in self._user.shortcuts.items():
             shortcut_item = QStandardItem(shortcut)
@@ -314,12 +315,12 @@ class NotificationWindow(QMainWindow):
             </html>''' % (font_size, color, msg)
         return rich_text
 
-    @Slot(str)
+    @pyqtSlot(str)
     def _on_possible_completion_signal(self, possible_completion_signal):
         rich_text = self._get_rich_text(possible_completion_signal, '00C20D')
         self.ui.completion_lbl.setText(rich_text)
 
-    @Slot(str)
+    @pyqtSlot(str)
     def _on_possible_correction_signal(self, possible_correction_signal):
         if not possible_correction_signal:
             self.ui.correction_lbl.setText('')
@@ -328,7 +329,7 @@ class NotificationWindow(QMainWindow):
         rich_text = self._get_rich_text(possible_correction_signal, 'FF0000')
         self.ui.correction_lbl.setText(rich_text)
 
-    @Slot(str)
+    @pyqtSlot(str)
     def _on_current_word_signal(self, current_word_signal):
         if not current_word_signal in self._user.snippets:
             self.ui.snippet_lbl.setText('')

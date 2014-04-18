@@ -1,11 +1,11 @@
-from PySide.QtCore import *
-from PySide.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import QDialog
 from accipiokey.gui.ui.Ui_NewSnippetDialog import Ui_NewSnippetDialog
 
 
 class NewSnippetDialog(QDialog):
 
-    new_snippet = Signal(dict)
+    new_snippet = pyqtSignal(dict)
 
     def __init__(self, parent):
         super(NewSnippetDialog, self).__init__(parent)
