@@ -116,15 +116,26 @@ class WordSignalEmitter(QObject):
     indexed_word_signal = pyqtSignal(str)
     user = None
 
-    # TODO: check if these need to be exposed
-    current_word = ''
-    last_word = ''
-    word_buffer = []
+    @property
+    def current_word(self):
+        return self._current_word
 
-    def __init__(self, **kwargs):
-        QObject.__init__(self, **kwargs)
+    @property
+    def last_word(self):
+        return self._last_word
+
+    @property
+    def word_buffer(self):
+        return self._word_buffer
+
+    # TODO: check if these need to be exposed
+    def __init__(self, parent=None):
+        QObject.__init__(self, parent)
 
         self._backspace_pressed = False
+        self._current_word = ''
+        self._last_word = ''
+        self._word_buffer = []
 
         KeyboardStateSignalEmitter.instance().key_down_signal.connect(self.on_key_down_signal)
         self.word_buffer_signal.connect(self.on_word_buffer_signal)
@@ -143,8 +154,8 @@ class WordSignalEmitter(QObject):
 
             # check if whitespace was entered last
             if not self.word_buffer[-1].strip():
-                self.last_word = word_list[-1]
-                self.current_word = ''
+                self._last_word = word_list[-1]
+                self._current_word = ''
 
                 self.last_word_signal.emit(self.last_word)
                 self.current_word_signal.emit(self.current_word)
@@ -155,8 +166,8 @@ class WordSignalEmitter(QObject):
 
             # if backspace was pressed and last key typed was whitespace
             if self._backspace_pressed and not self.word_buffer[-1].strip():
-                self.last_word = word_list[-1]
-                self.current_word = ''
+                self._last_word = word_list[-1]
+                self._current_word = ''
                 self._backspace_pressed = False
 
                 self.last_word_signal.emit(self.last_word)
@@ -165,15 +176,15 @@ class WordSignalEmitter(QObject):
 
             # append current key to current word
             if len(word_list) >= 2:
-                self.last_word = word_list[-2]
+                self._last_word = word_list[-2]
                 self.last_word_signal.emit(self.last_word)
             elif self.last_word:
-                self.last_word = ''
-            self.current_word = word_list[-1]
+                self._last_word = ''
+            self._current_word = word_list[-1]
             self.current_word_signal.emit(self.current_word)
         else:
-            self.current_word = ''
-            self.last_word = ''
+            self._current_word = ''
+            self._last_word = ''
 
             self.last_word_signal.emit(self.last_word)
             self.current_word_signal.emit(self.current_word)
@@ -195,16 +206,16 @@ class WordSignalEmitter(QObject):
         # TODO: create/find constants
         key_down_signal = keycode_to_unicode(key_down_signal)
         if len(key_down_signal) == 1:
-            self.word_buffer.append(key_down_signal)
+            self._word_buffer.append(key_down_signal)
             self.word_buffer_signal.emit(self.word_buffer)
         elif key_down_signal == 'space':
-            self.word_buffer.append(' ')
+            self._word_buffer.append(' ')
             self.word_buffer_signal.emit(self.word_buffer)
         elif key_down_signal == 'enter':
-            self.word_buffer.append(' ')
+            self._word_buffer.append(' ')
             self.word_buffer_signal.emit(self.word_buffer)
         elif key_down_signal == 'tab':
-            self.word_buffer.append(' ')
+            self._word_buffer.append(' ')
             self.word_buffer_signal.emit(self.word_buffer)
         elif key_down_signal == 'backspace':
             if self.word_buffer:
@@ -219,8 +230,8 @@ class ShortcutSignalEmitter(QObject):
     shortcut_signal = pyqtSignal(dict)
     user = None
 
-    def __init__(self, **kwargs):
-        QObject.__init__(self, **kwargs)
+    def __init__(self, parent=None):
+        QObject.__init__(self, parent)
 
         KeyboardStateSignalEmitter.instance().keyboard_state_signal.connect(
             self.on_keyboard_state_signal)
