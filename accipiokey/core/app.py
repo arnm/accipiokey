@@ -60,14 +60,14 @@ class AccipioKeyApp(QObject):
 
         Logger.info('AccipioKeyApp: Registering (%s)', username)
         # setup default user in DB
-        # TODO: create/use constants
+        # TODO: create/use constants, figure out best default shortcuts
         try:
             user = User(
                 username=username,
                 password=password,
                 shortcuts={
                     'completion': ['KEY_LEFTCTRL', 'KEY_C'],
-                    'snippet': ['KEY_LEFTCTRL', 'KEY_E']
+                    'snippet': ['KEY_LEFTCTRL', 'KEY_V']
                 },
                 snippets={'lol': 'laugh out loud'}).save()
         except ValidationError:

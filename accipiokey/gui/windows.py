@@ -155,6 +155,7 @@ class UserWindow(QMainWindow):
         r.moveCenter(QApplication.desktop().availableGeometry().center())
         self.setGeometry(r)
 
+        # icons
         self.ui.actionToggleAppState.setIcon(QIcon('ui/icons/play.png'))
         self.ui.actionLogout.setIcon(QIcon('ui/icons/cross.png'))
         self.ui.improve_btn.setIcon(QIcon('ui/icons/add-text.png'))
@@ -194,8 +195,10 @@ class UserWindow(QMainWindow):
     def _on_action_toggle_app_state_toggled(self, checked):
         if not checked:
             self.ui.actionToggleAppState.setIcon(QIcon('ui/icons/play.png'))
+            self.notification_window.close()
             return
         self.ui.actionToggleAppState.setIcon(QIcon('ui/icons/stop.png'))
+        self.notification_window.show()
 
     # TODO: not the most efficient way to handle updates
     def update_stats_model(self):
@@ -313,7 +316,7 @@ class NotificationWindow(QMainWindow):
         WordSignalEmitter.instance().current_word_signal.connect(
             self._on_current_word_signal)
 
-    def _get_rich_text(self, msg, color, font_size=16):
+    def _get_rich_text(self, msg, color, font_size=12):
         rich_text = '''
             <html>
             <head/>

@@ -18,6 +18,10 @@ class KeySignalEmitter(QObject):
 
     key_signal = pyqtSignal(object)
 
+    @property
+    def input_device(self):
+        return self._dev
+
     def __init__(self, parent=None):
         QObject.__init__(self, parent)
 
@@ -96,12 +100,12 @@ class KeyboardStateSignalEmitter(QObject):
             if keycode not in self._keyboard_state:
                 self._keyboard_state[keycode] = timestamp
                 self.keyboard_state_signal.emit(self._keyboard_state)
-            self.key_down_signal.emit(keycode_to_unicode(keycode))
+            self.key_down_signal.emit(keycode)
         elif keystate == KeyEvent.key_up:
             if keycode in self._keyboard_state:
                 del self._keyboard_state[keycode]
                 self.keyboard_state_signal.emit(self._keyboard_state)
-            self.key_up_signal.emit(keycode_to_unicode(keycode))
+            self.key_up_signal.emit(keycode)
 
 @ThreadSafeSingleton
 class WordSignalEmitter(QObject):
@@ -184,9 +188,9 @@ class WordSignalEmitter(QObject):
 
         # TODO: create/use constants
         if 'KEY_LEFTALT' in keyboard_state: return
-        if 'KEY_RIGHTALT' in keyboard_state: return
-        if 'KEY_LEFTCTRL' in keyboard_state: return
-        if 'KEY_RIGHTCTRL' in keyboard_state: return
+        elif 'KEY_RIGHTALT' in keyboard_state: return
+        elif 'KEY_LEFTCTRL' in keyboard_state: return
+        elif 'KEY_RIGHTCTRL' in keyboard_state: return
 
         # TODO: create/find constants
         key_down_signal = keycode_to_unicode(key_down_signal)

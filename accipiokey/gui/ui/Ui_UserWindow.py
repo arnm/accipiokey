@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file './ui/Ui_UserWindow.ui'
 #
-# Created: Fri Apr 18 15:26:20 2014
+# Created: Fri Apr 18 16:03:52 2014
 #      by: PyQt5 UI code generator 5.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_UserWindow(object):
     def setupUi(self, UserWindow):
         UserWindow.setObjectName("UserWindow")
-        UserWindow.resize(410, 525)
+        UserWindow.resize(410, 517)
         self.centralwidget = QtWidgets.QWidget(UserWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)

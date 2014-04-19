@@ -10,7 +10,7 @@ def unicode_to_keycode(unicode):
     if unicode == ' ':
         return 'KEY_' + 'space'.upper()
     if unicode == 'Alt':
-        return 'KEY_RIGHTALT'
+        return 'KEY_LEFTALT'
     if unicode == 'Ctrl':
         return 'KEY_LEFTCTRL'
     return 'KEY_' + unicode.upper()
