@@ -1,7 +1,6 @@
-from accipiokey.core.apputils import emulate_key_events
+from accipiokey.core.utils import *
 from accipiokey.core.documents import *
 from accipiokey.core.emitters import *
-from accipiokey.core.esutils import index_new_words, increment_word_weight
 from accipiokey.gui.windows import *
 from mongoengine.errors import ValidationError
 from os.path import commonprefix
@@ -151,17 +150,14 @@ class AccipioKeyApp(QObject):
         if not self.is_logged_in: return False
         if not mimetypes.guess_type(path)[0] == 'text/plain': return False
 
+        Logger.info('AccipioKeyApp: Processing Writing (%s)', path)
         with open(path, 'r') as f:
-            title = os.path.splitext(os.path.basename(path))
+            title = os.path.splitext(os.path.basename(path))[0]
             content = f.read()
-            writing = Writing(user=self._user, title=title, content=content)
-            writing.save()
-            self._process_writing(writing)
+            Logger.debug('AccipioKeyApp: Title (%s) Content (%s)', title, content)
+            writing = Writing(user=self._user, title=title, content=content).save()
+            process_writing(writing)
         return True
-
-    # TODO: implement
-    def _process_writing(self, writing):
-        pass
 
     @pyqtSlot(str)
     def _on_indexed_word_signal(self, indexed_word_signal):
@@ -380,6 +376,7 @@ class AccipioKeyAppController(QApplication):
         self._user_window.ui.actionToggleAppState.toggled.connect(
             self._on_action_toggle_app_state_toggled)
         self._user_window.ui.actionLogout.triggered.connect(self._on_app_logout)
+        self._user_window.text_upload_signal.connect(self._app.add_writing)
 
         self._user_window.show()
 

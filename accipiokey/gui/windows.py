@@ -101,6 +101,8 @@ class RegisterWindow(QMainWindow):
 
 class UserWindow(QMainWindow):
 
+    text_upload_signal = pyqtSignal(str)
+
     def __init__(self, user, parent=None):
         super(UserWindow, self).__init__(parent)
 
@@ -191,6 +193,17 @@ class UserWindow(QMainWindow):
 
         self.ui.nw_pos_combo.currentIndexChanged.connect(
             self._on_nw_pos_combo_change)
+
+        self.ui.improve_btn.clicked.connect(self._on_improve_btn_clicked)
+
+    # TODO: change starting directory
+    def _on_improve_btn_clicked(self):
+        filepath, type = QFileDialog.getOpenFileName(
+            self,
+            'Process File',
+            '/home/',
+            'Text Files (*.txt)')
+        self.text_upload_signal.emit(filepath)
 
     def _on_action_toggle_app_state_toggled(self, checked):
         if not checked:

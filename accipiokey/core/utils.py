@@ -3,6 +3,30 @@ from accipiokey.core.mappings import *
 from accipiokey.core.logger import Logger
 from elasticsearch.helpers import bulk
 from elasticutils import get_es, S
+from evdev import ecodes, UInput
+from textblob import TextBlob
+
+# TODO: fix this hack
+def keycode_to_unicode(keycode): return keycode.replace('KEY_', '').lower()
+
+# TODO: fix this hack
+def unicode_to_keycode(unicode):
+    if unicode == ' ':
+        return 'KEY_' + 'space'.upper()
+    if unicode == 'Alt':
+        return 'KEY_LEFTALT'
+    if unicode == 'Ctrl':
+        return 'KEY_LEFTCTRL'
+    return 'KEY_' + unicode.upper()
+
+# TODO: could be more efficient (UInput could remain open)
+def emulate_key_events(unicodes):
+    with UInput() as uinput:
+        for uni in unicodes:
+            keycode = unicode_to_keycode(uni)
+            exec('uinput.write(ecodes.EV_KEY, ecodes.' + keycode + ', 1)')
+            exec('uinput.write(ecodes.EV_KEY, ecodes.' + keycode + ', 0)')
+            uinput.syn()
 
 def init_index():
     es = get_es()
@@ -18,8 +42,7 @@ def init_index():
 
 def index_new_words(user, words, normalize_func=lambda s: s.lower().rstrip()):
     actions = []
-    for text in words:
-        text = normalize_func(text)
+    for text in map(normalize_func, words):
         action = { 'user': str(user.id), 'text' : { 'input': text, 'output': text, 'weight': 1} }
         actions.append(action)
 
@@ -67,5 +90,13 @@ def increment_word_weight(user, word):
             }
         })
 
+# TODO: could be more efficient
+def process_writing(writing, normalize_func=lambda s: s.lower().rstrip()):
+    content = TextBlob(writing.content)
+    for word in map(normalize_func, content.words):
+        if get_word(writing.user, word):
+            increment_word_weight(writing.user, word)
+        else:
+            Logger.debug('Writing Processor: Word Not Indexed (%s)', word)
 
 
