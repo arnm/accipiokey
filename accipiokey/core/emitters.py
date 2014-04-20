@@ -1,5 +1,6 @@
 from accipiokey.core import settings
-from accipiokey.core.apputils import keycode_to_unicode, check_if_indexed
+from accipiokey.core.apputils import keycode_to_unicode
+from accipiokey.core.esutils import check_if_indexed
 from accipiokey.core.logger import Logger
 from accipiokey.core.mappings import WordMappingType
 from datetime import datetime

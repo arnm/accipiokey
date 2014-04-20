@@ -11,6 +11,7 @@ class WordMappingType(MappingType):
     def get_mapping_type_name(cls):
         return 'word'
 
+    # TODO: research what the field payloads can offer
     @classmethod
     def get_mapping(cls):
         return {

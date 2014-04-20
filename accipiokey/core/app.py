@@ -1,7 +1,7 @@
 from accipiokey.core.apputils import emulate_key_events
 from accipiokey.core.documents import *
 from accipiokey.core.emitters import *
-from accipiokey.core.esutils import index_new_words
+from accipiokey.core.esutils import index_new_words, increment_word_weight
 from accipiokey.gui.windows import *
 from mongoengine.errors import ValidationError
 from os.path import commonprefix
@@ -163,10 +163,9 @@ class AccipioKeyApp(QObject):
     def _process_writing(self, writing):
         pass
 
-    # TODO: implement
     @pyqtSlot(str)
     def _on_indexed_word_signal(self, indexed_word_signal):
-        Logger.debug('IndexedWordSignalHandler: (%s)', indexed_word_signal)
+        increment_word_weight(self.user, indexed_word_signal)
 
     @pyqtSlot(str)
     def _on_correction_signal(self, correction_signal):
