@@ -93,10 +93,21 @@ def increment_word_weight(user, word):
 # TODO: could be more efficient
 def process_writing(writing, normalize_func=lambda s: s.lower().rstrip()):
     content = TextBlob(writing.content)
+    unindexed_words = []
+
     for word in map(normalize_func, content.words):
         if get_word(writing.user, word):
             increment_word_weight(writing.user, word)
         else:
-            Logger.debug('Writing Processor: Word Not Indexed (%s)', word)
+            Logger.info('Writing Processor: Word Not Indexed (%s)', word)
+            if word not in unindexed_words:
+                unindexed_words.append(word)
+            else:
+                Logger.info('Writing Processor: Indexing (%s)', unindexed_words)
+                index_new_words(writing.user, unindexed_words)
+                del unindexed_words[:]
 
+    if unindexed_words:
+        Logger.info('Writing Processor: Indexing (%s)', unindexed_words)
+        index_new_words(writing.user, unindexed_words)
 
