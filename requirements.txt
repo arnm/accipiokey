@@ -1,4 +1,4 @@
-PyYAML==3.11
+PyYAML==5.4
 elasticsearch==0.4.5
 elasticutils==0.9.1
 evdev==0.4.3
